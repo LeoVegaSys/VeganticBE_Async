@@ -1,0 +1,151 @@
+Invoke the process with command `python dv_handoff_main.py --serve --port 9090`
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+FOLDERS:
+
+agents/ : Contains code files for the agents
+data/ : Stores data dumps for the MCP servers
+database/ : Contains code files for the database manager
+graph/ : Contains code files for the agent Langgraphs
+logs/ : Stores logging files for the application
+models/ : Contains code files for the model manager
+        : Holds storage for LLMs if required **DO NOT ADD TO GIT**
+server/ : Contains code files for the application API server
+session_memory/ : Holds storage for session **DO NOT ADD TO GIT**
+skills/ : Contains markdown files for agent business context
+state/ : Contains code files for the agents' state
+user_store/ : Holds storage for users' interactions **DO NOT ADD TO GIT**
+utils/ : Contains utility code for the agents
+
+
+ENVIRONMENT VARIABLES (stored in .env and processed in config.py):
+
+# ===============================
+# OLLAMA
+# ===============================
+OLLAMA_URL : URL to the generate API for LLMs
+OLLAMA_HOST : Hostname or IP of LLM server
+OLLAMA_PORT : Port at which LLM server is running 
+QA_MODEL : Database-specific Model name 
+QA_SUM_MODEL : Reasoning Model name
+OLLAMA_KEEP_ALIVE : time for which LLM model stays active (e.g. "30m", "1h") 
+QA_TIMEOUT : maximum timeout for LLM responses
+TRAFFIC_DB : **FUTURE DEVELOPMENT**
+
+# ===============================
+# LOG
+# ===============================
+QA_LOG_FILE : Primary Logger filename
+QA_FEEDBACK_LOG_FILE : Feedback Logger filename
+
+# ===============================
+# AGENTS KNOWLEDGE
+# ===============================
+QA_BUSINESS_FACTS : Markdown File having business instructions for LLM 
+QA_DIP_MIN_DROP : Minimum threshold percentage for calculating Dip
+QA_DIP_HIGH_UTIL : Maximum utilization percentage for calculating Dip
+QA_ROW_LIMIT : Maximum rows in result
+QA_MAX_REPAIRS : Number of attempts to repair broken SQL
+
+
+# ===============================
+# DATABASE
+# ===============================
+DB_TYPE : Primary Database type (e.g. "mysql", "duckdb")
+DB_URL : **FUTURE DEVELOPMENT**
+DB_HOST : **FUTURE DEVELOPMENT**
+DB_PORT : **FUTURE DEVELOPMENT**
+DB_USER : **FUTURE DEVELOPMENT**
+DB_PASSWORD : **FUTURE DEVELOPMENT**
+DB_NAME : **FUTURE DEVELOPMENT**
+DB_PATH : Path of database flat file
+
+MCP_DB_TYPE : Primary MCP Database type (e.g. "mysql", "duckdb")
+# Valid values : mysql, duckdb, oracle, redis, postgresql
+# Please remember to set similar names to server names for MCP_CONFIG in mcp_config.py
+
+
+TRAFFIC_TABLE_NAME : Table name for traffic data
+
+# ===============================
+# API SERVER
+# ===============================
+SERVER_HOST : Hostname or IP of application server
+SERVER_PORT : Port on which application server is running
+
+
+# ===============================
+# REDIS STORE
+# ===============================
+REDIS_HOST : Hostname or IP of redis-stack server
+REDIS_PORT : Port on which redis-stack server is running
+REDIS_TTL : Time-to-live configuration in number of minutes
+KEEP_FIRST_N : Number of initial conversations to hold in memory
+KEEP_LAST_N : Number of latest conversations to hold in memory
+KEEP_THRESHOLD : Number of total conversations to hold in memory
+
+
+# ===============================
+# REDIS NAMESPACES
+# ===============================
+HISTORY : Placeholder to store conversations in memory
+WARMUP : Placeholder to store warmup history
+
+
+
+
+MCP CONFIGURATION (stored in mcp_config.py):
+
+MCP_CONFIG stores the MCP-related details for MCP servers. It is a list of MCP servers, identified by:
+- Server Name : Type of MCP server (e.g. "mysql", "duckdb")
+- Server details : Server URL or command-line arguments to run MCP server
+
+Below parameters are specific to Database MCPs
+- Query Function name : MCP Function responsible for executing queries
+- Query key : The placeholder to be sent as key, in request to MCP server
+
+Example:
+
+MCP_CONFIG={
+    "mysql":{
+        "server":{
+                "transport": "http",  # HTTP-based remote server
+                # Ensure you start your weather server on port 8000
+                "url": "http://127.0.0.1:8080/mcp",
+            },
+        "query_function": "run_query",
+        "query_key": "query",
+    },
+    "duckdb":{
+        "server": {
+                "command": "uvx",
+                "args": ["mcp-server-motherduck", "--db-path", "./data/duckdb/traffic.db",
+                         "--max-rows", "10000", "--max-chars", "1000000"],
+                         #"--max-rows", "100000", "--max-chars", "10000000"],
+                "transport": "stdio"
+            },
+        "query_function": "execute_query",
+        "query_key": "sql",
+    },
+}
+
+New MCP servers need to be added to this config list, to become available for use.
+Relevant MCP details can be added, based on code requirements.
+
+
+LLM PORT CONFIG (stored in llm_port_config.py):
+
+LLM_PORT_CONFIG is designed to allow models to be run on different ports of different containers.
+It is a mapping of the models against their respective ports
