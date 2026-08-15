@@ -43,24 +43,5 @@ MCP_CONFIG={
     },
 }
 
-
-### LLM CONFIG
-PARSE_QUESTION_LLM="lllama3.2"
-GET_UNIQUE_NOUNS_LLM="llama3.2"
-GENERATE_SQL_LLM="llama3.2"
-VALIDATE_AND_FIX_SQL_LLM="llama3.2"
-EXECUTE_SQL_LLM="llama3.2"
-FORMAT_RESULTS_LLM="llama3.2"
-CHOOSE_VISUALIZATION_LLM="llama3.2"
-FORMAT_DATA_FOR_VISUALIZATION_LLM="llama3.2"
-
-STEP_LLMS={
-    "parse_question" : "llama3.2",
-    "get_unique_nouns" : "llama3.2",
-    "generate_sql" : "llama3.2",
-    "validate_and_fix_sql" : "llama3.2",
-    "execute_sql" : "llama3.2",
-    "format_results" : "llama3.2",
-    "choose_visualization" : "llama3.2",
-    "format_data_for_visualization" : "llama3.2",
-}
+#Valid values : mysql, duckdb, oracle, redis, postgresql
+MCP_DB_TYPE="duckdb" 

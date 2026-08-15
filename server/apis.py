@@ -1,0 +1,54 @@
+import json
+from aiohttp import web
+
+from config.server import SERVER_HOST
+from src.traffic.graph import TrafficWorkflowManager
+from utils.context import QueryRequest
+
+
+
+async def handle_query(request):
+    try:
+        data = await request.json()
+        obj = QueryRequest(body=data)
+        if not obj:
+            return web.json_response(
+                {"error": "Invalid request structure"},
+                status=400  # Bad Request
+            )
+        res = await TrafficWorkflowManager().run_traffic_agent(req=obj)
+        payload = json.dumps(res, default=str).encode()
+        return web.json_response({"result": payload})
+    except json.JSONDecodeError:
+        return web.json_response(
+            {"error": "Invalid JSON"},
+            status=400  # Bad Request
+        )
+    except Exception as e:
+        return web.json_response(
+            {"error": str(e)},
+            status=500
+            )
+
+async def handle_feedback(request):
+    data = await request.json()
+    return web.json_response({"received": data})
+
+
+
+# 3. Setup the Application and Routes
+async def init_app():
+    app = web.Application()
+    app.add_routes([
+        web.post('/ask', handle_query),
+        web.post('/feedback', handle_feedback)
+    ])
+
+    return app
+
+# 4. Run the server on a specific port
+def serve(port):
+# if __name__ == '__main__':
+    # web.run_app manages the asyncio event loop automatically
+    # Set host='127.0.0.1' and port=8080 as requested
+    web.run_app(init_app(), host=SERVER_HOST, port=port)

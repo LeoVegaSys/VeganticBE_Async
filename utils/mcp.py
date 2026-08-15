@@ -1,0 +1,54 @@
+import json
+from typing import Union
+
+from config.mcp import MCP_CONFIG
+
+def get_mcp_details():
+    mcp_server_config = {}
+    mcp_func = {}
+    mcp_key = {}
+    for key, val in MCP_CONFIG.items():
+        """Get MCP server details"""
+        mcp_server_config[key] = val["server"]
+        """Get MCP executor function details"""
+        mcp_func[key] = val["query_function"]
+        """Get MCP API key details"""
+        mcp_key[key] = val["query_key"]
+    return (mcp_server_config, mcp_func, mcp_key)
+
+def parse_mcp_query_response(mcp_result: Union[list, dict, str, None], tool_name: str = "") -> dict:
+    """
+    Parse MCP Tool Query Execution response
+    Input args:
+        Expected mcp_result structure:
+        [
+            {'type': 'text',
+            'text': '{
+                \n  "success": true,
+                \n  "columns": [\n    "LinkType",\n    "Node Name",\n    ...],
+                \n  "columnTypes": [\n    "VARCHAR",\n    "VARCHAR",\n    ...],
+                \n  "rows": [\n    [\n      "Core",\n      "HYD_OHR_901_...]\n  ],
+                \n  "rowCount": 5\n}',
+            'id': 'lc_42c9b207-fc49-4e31-a50a-c0fa18ecf9ad'}
+            ]
+    Intermediate response:
+        {
+            "success": true,
+            "columns": ["NodeNumber", "NodeID", ...],
+            "columnTypes": ["SHORT", "VAR_STRING", ...],
+            "rows": [["Core", "HYD_OHR_901_...]],
+            "data": [{"NodeNumber": 117, "NodeID": "202.123.37.241", ...}],
+            "rowCount": 5
+        }
+    """
+
+    try:
+        result = json.loads(mcp_result[0]['text'])
+        tool_id = mcp_result[0]['id']
+        data = [{c: (str(v) if hasattr(v, "isoformat") else v) for c, v in zip(result["columns"], r)} for r in result["rows"]]
+        result["data"] = data
+        result['tool_id'] = tool_id
+        result['tool_name'] = tool_name
+        return result
+    except Exception as e:
+        raise e

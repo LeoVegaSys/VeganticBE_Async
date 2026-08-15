@@ -1,0 +1,55 @@
+from langgraph.graph import StateGraph, START, END
+
+from state import TrafficState, TrafficOutputState
+from agent import TrafficAgent
+from utils.context import QueryRequest
+
+
+class TrafficWorkflowManager:
+    def __init__(self):
+        self.sql_agent=TrafficAgent()
+
+    def create_workflow(self) -> StateGraph:
+        """Create and configure the workflow graph."""
+        workflow = StateGraph(state_schema=TrafficState,
+                              input_schema=TrafficState,
+                              output_schema=TrafficOutputState)
+
+        workflow.add_node("generate_sql", self.sql_agent.gen_sql)
+        workflow.set_entry_point("generate_sql")
+        workflow.add_edge("generate_sql", END)
+
+        '''
+        workflow.add_node("warmup", self.sql_agent.warmup)
+        workflow.add_node("generate_sql", self.sql_agent.generate_sql)
+        workflow.add_node("run_sql", self.sql_agent.run_sql)
+        workflow.add_node("repair_sql", self.sql_agent.repair_sql)
+        workflow.add_node("summarize", self.sql_agent.summarize)
+        workflow.add_node("review", self.sql_agent.review)
+
+        workflow.add_edge("warmup", "generate_sql")
+        workflow.add_edge("generate_sql", "run_sql")
+        workflow.add_edge("run_sql", "repair_sql")
+        # workflow.add_edge("summarize", "review")
+        # workflow.add_edge("review", END)
+        workflow.add_edge("summarize", END)
+        
+        workflow.set_entry_point("warmup")
+        '''
+
+        return workflow
+    
+    def returnGraph(self):
+        return self.create_workflow().compile(checkpointer=True)
+    
+    # async def run_traffic_agent(self, question: str, mcp_server:str, summarize: bool, request_id: str) -> dict:
+    async def run_traffic_agent(self, req: QueryRequest) -> dict:
+        print(f"\nTrafficGraph :: run_traffic_agent :: {req}")
+        # app = self.create_workflow().compile(checkpointer=True)
+        app = self.create_workflow().compile()
+        result = await app.ainvoke(
+            {"question": req.question, "summarize": req.summarize, 
+             "request_id": req.request_id, "mcp_server": req.mcp_server}
+        )
+        print(f"\nrun_traffic_agent :: result :: {result}")
+        return result
