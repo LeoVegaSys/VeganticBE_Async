@@ -18,7 +18,8 @@ async def handle_query(request):
             )
         res = await TrafficWorkflowManager().run_traffic_agent(req=obj)
         payload = json.dumps(res, default=str).encode()
-        return web.json_response({"result": payload})
+        # return web.json_response({"result": payload})
+        return web.json_response(payload)
     except json.JSONDecodeError:
         return web.json_response(
             {"error": "Invalid JSON"},
@@ -30,10 +31,10 @@ async def handle_query(request):
             status=500
             )
 
+
 async def handle_feedback(request):
     data = await request.json()
     return web.json_response({"received": data})
-
 
 
 # 3. Setup the Application and Routes

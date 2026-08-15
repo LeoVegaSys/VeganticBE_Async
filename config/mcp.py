@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 ### MCP CONFIG
+MCP_DB_PATH=""
 MCP_DB_URL="http://127.0.0.1:8080/mcp"
 # MCP_CONFIG= {
 #             # "time": {
