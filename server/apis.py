@@ -1,5 +1,6 @@
 import json
 from aiohttp import web
+import aiohttp_cors
 
 from config.server import SERVER_HOST
 from src.traffic.graph import TrafficWorkflowManager
@@ -44,6 +45,19 @@ async def init_app():
         web.post('/ask', handle_query),
         web.post('/feedback', handle_feedback)
     ])
+
+    # Configure CORS
+    cors = aiohttp_cors.setup(app, defaults={
+        "*": aiohttp_cors.ResourceOptions(
+            allow_credentials=True,
+            expose_headers="*",
+            allow_headers="*",
+        )
+    })
+
+    # Attach CORS to specific routes
+    for route in list(app.router.routes()):
+        cors.add(route)
 
     return app
 

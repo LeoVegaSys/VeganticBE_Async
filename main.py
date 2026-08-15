@@ -37,9 +37,11 @@ def main():
     ap.add_argument("--user-id", type=str)
     args = ap.parse_args()
     print(f"args :: {args}")
+    '''
     DB_PATH = args.db
     if not DB_PATH or not os.path.exists(DB_PATH):
         sys.exit(f"DB not found: {DB_PATH} (set TRAFFIC_DB or --db)")
+    '''
     if args.serve:
         serve(args.port); return
     

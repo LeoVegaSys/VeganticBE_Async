@@ -1,7 +1,7 @@
 from langgraph.graph import StateGraph, START, END
 
-from state import TrafficState, TrafficOutputState
-from agent import TrafficAgent
+from src.traffic.state import TrafficState, TrafficOutputState
+from src.traffic.agent import TrafficAgent
 from utils.context import QueryRequest
 
 
