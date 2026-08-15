@@ -33,7 +33,6 @@ class TrafficAgent:
     def __init__(self):
         self.db_manager = DatabaseManager()
         self.llm_manager = LLMManager()
-        self.business_facts = get_business(skills_file_name=QA_BUSINESS_FACTS)
 
     async def _get_schema(self) -> str:
         """ 
@@ -49,8 +48,9 @@ class TrafficAgent:
         """Create/Corrects SQL query for provided user question"""
         print(f"\ntraffic_agent :: generate_sql :: state :: {state}")
         self.request_id = state["request_id"]
+        self.business_facts = await get_business()
         question = state["question"]
-        schema = self._get_schema()
+        schema = await self._get_schema()
 
         prompt = sql_generate_prompt(
             db_type=MCP_DB_TYPE, business_facts=self.business_facts,

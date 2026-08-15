@@ -52,7 +52,8 @@ class LLMManager:
                         # TODO Parse response for JSON response
                         # return resp.json()["response"]
                         response.raise_for_status()
-                        return await response.json()
+                        llm_resp = await response.json()
+                        return llm_resp["response"]
                     
         except aiohttp.ClientConnectorError as e:
             print(f"Connection error during {action_type}: {e}")

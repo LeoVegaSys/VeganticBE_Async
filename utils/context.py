@@ -15,10 +15,11 @@ class QueryRequest:
         self.question = body.get("question", "").strip()
         self.user_resp = body.get("user_response", "").strip()
         self.db_type = body.get("db_type", MCP_DB_TYPE)
-        self.summarize = body.get("no_summary", False)
+        self.summarize = not body.get("no_summary", False)
         self.request_id = body.get("request_id", "")
         self.session_id = body.get("session_id", "")
         self.user_id = body.get("user_id", "")
+        self.mcp_server = body.get("mcp_server", MCP_DB_TYPE)
 
     def is_valid(self, body):
         return True if isinstance(body, dict) else False
