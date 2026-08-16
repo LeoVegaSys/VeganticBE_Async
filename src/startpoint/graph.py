@@ -34,7 +34,7 @@ async def call_traffic_graph(state: InputState, runtime: Runtime[Context]):
     print(f"\ncall_traffic_graph :: state :: {state}")
     result = await TrafficWorkflowManager().run_traffic_agent(
         question=state["question"], summarize=state["summarize"], 
-        request_id=state["uuid"], mcp_server=state["mcp_server"])
+        request_id=state["request_id"], mcp_server=state["mcp_server"])
     # Write result to store
     await add_to_memories(
         user_id=runtime.context.user_id, param_key="answer", data=result, 
@@ -103,11 +103,11 @@ class WorkflowManager:
     def returnGraph(self):
         return self.create_workflow().compile()
 
-    async def answer_query(self, obj: QueryRequest) -> dict:
+    async def answer_query(self, request: QueryRequest) -> dict:
         """
         Run the agent workflow and return the formatted answer.
         """
-        print(f"\nGraph :: answer_query :: req {obj}")
+        print(f"\nGraph :: answer_query :: req {request.__dict__}")
         
         store_uri = f"redis://{REDIS_HOST}:{REDIS_PORT}"
         checkpointer = InMemorySaver()
@@ -118,21 +118,21 @@ class WorkflowManager:
             app = self.create_workflow().compile(store=store, checkpointer=checkpointer)
             # app = self.create_workflow().compile()
 
-            _uuid = obj.request_id or uuid4().hex[:12]
+            _uuid = request.request_id or uuid4().hex[:12]
             config: RunnableConfig = {
-                "configurable": {"thread_id": obj.session_id}
-                } if obj.session_id else None
-            context = Context(user_id=obj.user_id) if obj.user_id else None
+                "configurable": {"thread_id": request.session_id}
+                } if request.session_id else None
+            context = Context(user_id=request.user_id) if request.user_id else None
 
-            if obj.user_response:
+            if request.user_response:
                 result = await app.ainvoke(
-                    Command(resume=obj.user_response),
+                    Command(resume=request.user_response),
                     config=config, context=context)
             else:
                 result = await app.ainvoke(
-                    input={"question": obj.question, "uuid": _uuid,
-                           "summarize": obj.summarize,
-                           "mcp_server": obj.mcp_server},
+                    input={"question": request.question, "request_id": _uuid,
+                           "summarize": request.summarize,
+                           "mcp_server": request.mcp_server},
                     config=config, context=context)
 
             snapshot = app.get_state(config)

@@ -17,8 +17,8 @@ class QueryRequest:
         self.mcp_server = body.get("db_type", MCP_DB_TYPE)
         self.summarize = not body.get("no_summary", False)
         self.request_id = body.get("request_id", "")
-        self.session_id = body.get("session_id", "")
-        self.user_id = body.get("user_id", "")
+        self.session_id = body.get("session_id", "SESS3")
+        self.user_id = body.get("user_id", "USER3")
 
     def is_valid(self, body):
         return True if isinstance(body, dict) else False

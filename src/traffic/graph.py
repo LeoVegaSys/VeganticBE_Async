@@ -35,15 +35,16 @@ class TrafficWorkflowManager:
     
     def returnGraph(self):
         return self.create_workflow().compile(checkpointer=True)
-    
-    # async def run_traffic_agent(self, question: str, mcp_server:str, summarize: bool, request_id: str) -> dict:
-    async def run_traffic_agent(self, req: QueryRequest) -> dict:
-        print(f"\nTrafficGraph :: run_traffic_agent :: {req}")
+
+    async def run_traffic_agent(self, question: str, mcp_server: str,
+                                summarize: bool, request_id: str) -> dict:
+        print(f"\nTrafficGraph :: run_traffic_agent :: Q {question} :: \
+              DT {mcp_server} :: SMR {summarize} :: ID {request_id}")
         app = self.create_workflow().compile(checkpointer=True)
         # app = self.create_workflow().compile()
         result = await app.ainvoke(
-            {"question": req.question, "summarize": req.summarize, 
-             "request_id": req.request_id, "mcp_server": req.mcp_server}
+            {"question": question, "summarize": summarize,
+             "request_id": request_id, "mcp_server":mcp_server}
         )
         print(f"\nrun_traffic_agent :: result :: {result}")
         return result
