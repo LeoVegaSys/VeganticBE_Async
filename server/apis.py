@@ -3,7 +3,7 @@ from aiohttp import web
 import aiohttp_cors
 
 from config.server import SERVER_HOST
-from src.traffic.graph import TrafficWorkflowManager
+from src.startpoint.graph import WorkflowManager
 from utils.context import QueryRequest
 
 
@@ -17,9 +17,8 @@ async def handle_query(request):
                 {"error": "Invalid request structure"},
                 status=400  # Bad Request
             )
-        res = await TrafficWorkflowManager().run_traffic_agent(req=obj)
-        payload = json.dumps(res, default=str).encode()
-        # return web.json_response({"result": payload})
+        res = await WorkflowManager().answer_query(req=obj)
+        payload = json.dumps(res, default=str)
         return web.json_response(payload)
     except json.JSONDecodeError:
         return web.json_response(

@@ -15,11 +15,6 @@ class TrafficWorkflowManager:
                               input_schema=TrafficState,
                               output_schema=TrafficOutputState)
 
-        workflow.add_node("generate_sql", self.sql_agent.gen_sql)
-        workflow.set_entry_point("generate_sql")
-        workflow.add_edge("generate_sql", END)
-
-        '''
         workflow.add_node("warmup", self.sql_agent.warmup)
         workflow.add_node("generate_sql", self.sql_agent.generate_sql)
         workflow.add_node("run_sql", self.sql_agent.run_sql)
@@ -35,7 +30,6 @@ class TrafficWorkflowManager:
         workflow.add_edge("summarize", END)
         
         workflow.set_entry_point("warmup")
-        '''
 
         return workflow
     
@@ -45,8 +39,8 @@ class TrafficWorkflowManager:
     # async def run_traffic_agent(self, question: str, mcp_server:str, summarize: bool, request_id: str) -> dict:
     async def run_traffic_agent(self, req: QueryRequest) -> dict:
         print(f"\nTrafficGraph :: run_traffic_agent :: {req}")
-        # app = self.create_workflow().compile(checkpointer=True)
-        app = self.create_workflow().compile()
+        app = self.create_workflow().compile(checkpointer=True)
+        # app = self.create_workflow().compile()
         result = await app.ainvoke(
             {"question": req.question, "summarize": req.summarize, 
              "request_id": req.request_id, "mcp_server": req.mcp_server}

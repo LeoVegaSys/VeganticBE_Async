@@ -8,6 +8,34 @@ from config.llm import OLLAMA_KEEP_ALIVE
 REDIS_STORE_URI = f"redis://{REDIS_HOST}:{REDIS_PORT}"
 
 
+def get_ttl_config():
+    return {
+    "default_ttl": int(REDIS_TTL),      # Expire data after REDIS_TTL minutes
+    "refresh_on_read": True             #TRUE to Reset expiration timer on each read
+}
+
+
+async def manage_store(user_id: str):
+    """
+    Clear older records. Store size max KEEP_THRESHOLD
+    Check counts of each namespace, Sort by updated_at asc
+    Keep first KEEP_FIRST_N and latest KEEP_LAST_N
+    """
+    try:
+        async with AsyncRedisStore.from_conn_string(REDIS_STORE_URI) as store:
+            namespaces = await store.alist_namespaces(suffix=(user_id,))
+            for ns in namespaces:
+                results = await store.asearch(ns, limit=50)
+                print(f"store :: manage :: UID {user_id} :: NS {ns} :: LEN {len(results)}")
+                if len(results) > KEEP_THRESHOLD:
+                    r_sorted = sorted(results, key=lambda x: x.updated_at)
+                    for s in r_sorted[KEEP_FIRST_N: -KEEP_LAST_N]:
+                        await store.adelete(ns, key=s.key)
+    except Exception as e:
+        print(f"Error occurred during store read : {str(e)}")
+        return False
+
+
 async def write_to_store(user_id: str, category: str, param: str, data: str):
     from uuid import uuid4
     try:

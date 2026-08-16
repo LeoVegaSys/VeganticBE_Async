@@ -1,32 +1,22 @@
+import json
 
+from langgraph.types import Command
 from langgraph.runtime import Runtime
 from langchain.messages import HumanMessage, SystemMessage, AIMessage, ToolMessage
+from langchain_core.output_parsers import JsonOutputParser
 
 from managers.database.db import DatabaseManager
 from managers.models.llm import LLMManager
 from utils.skills import get_business
 from utils.context import Context
-from config.traffic import TRAFFIC_TABLE_NAME
+from utils.clean import clean_sql
+from utils.categorize import intent_tag
+from utils.store import warmup_done, get_conversation_history
+from utils.prompts import (summarize_prompt, fallback_summarize, review_prompt,
+sql_repair_prompt, conversation_prompt, sql_generate_prompt)
+from config.traffic import TRAFFIC_TABLE_NAME, QA_MAX_REPAIRS, CHART_INTENT_ALIASES
 from config.mcp import MCP_DB_TYPE
-from config.skills import QA_BUSINESS_FACTS
-from config.llm import SQL_MODEL
-
-
-def clean_sql(query: str) -> str:
-    return query.replace("```sql", "").replace("```", "").strip().rstrip(";").strip()
-
-
-def sql_generate_prompt(
-        db_type, business_facts, table_name, schema, question):
-    return f"""You are an expert telecom analyst writing {db_type} SQL.
-{business_facts}
-LIVE SCHEMA of table `{table_name}`:
-{schema}
-Write ONE DuckDB SQL query that answers the question.
-Return ONLY the SQL — no markdown, no comments, no explanation.
-If there is not enough information to write a SQL query, respond with "NOT_ENOUGH_INFO".
-Question: {question}
-"""
+from config.llm import SQL_MODEL, SUMMARY_MODEL
 
 
 class TrafficAgent:
@@ -43,36 +33,7 @@ class TrafficAgent:
         result = await self.db_manager._execute_query(uuid=self.request_id, query=query)
         return ", ".join(f'"{c}" {t}' for c, t in result["rows"])
 
-    
-    async def gen_sql(self, state: dict, runtime: Runtime[Context]) -> dict:
-        """Create/Corrects SQL query for provided user question"""
-        print(f"\ntraffic_agent :: generate_sql :: state :: {state}")
-        self.request_id = state["request_id"]
-        self.business_facts = await get_business()
-        question = state["question"]
-        schema = await self._get_schema()
 
-        prompt = sql_generate_prompt(
-            db_type=MCP_DB_TYPE, business_facts=self.business_facts,
-            table_name=TRAFFIC_TABLE_NAME, schema=schema,
-            question=question,
-        )
-        
-        # print(f"\ntraffic_agent :: generate_sql :: do_repair :: {do_repair} :: prompt :: {prompt}")
-        print(f"\ntraffic_agent :: generate_sql :: prompt :: {prompt}")
-        sql_response = clean_sql(
-            await self.llm_manager.call(
-                prompt=prompt, model=SQL_MODEL, temperature=0.0
-            ))
-
-        msgs = [SystemMessage(content=prompt), AIMessage(sql_response)]
-    
-        if sql_response.strip() == "NOT_ENOUGH_INFO":
-            return {"messages": msgs, "sql_query": "NOT_RELEVANT"}
-        else:
-            return {"messages": msgs, "sql_query": sql_response, "sql_valid": True, "sql_issues": "", "error": ""}
-
-'''
     def repair_sql(self, state: dict) -> dict:
         """Validate and fix SQL"""
         print(f"\ntraffic_agent :: repair_sql :: state :: {state}")
@@ -94,90 +55,96 @@ class TrafficAgent:
         )
     
 
-    def _get_schema(self) -> str:
+    async def _get_schema(self) -> str:
         """ 
         Returns comma-separated string of concatenated column names and their datatypes 
         """
         query = f"SELECT column_name, data_type FROM information_schema.columns \
         WHERE table_name = '{TRAFFIC_TABLE_NAME}' ORDER BY ordinal_position"
-        result = self.db_manager.execute_query(uuid=self.request_id, query=query)
+        result = await self.db_manager._execute_query(uuid=self.request_id, query=query)
         return ", ".join(f'"{c}" {t}' for c, t in result["rows"])
     
 
-    def _get_link_types(self) -> list:
+    async def _get_link_types(self) -> list:
         """ Returns list of valid link types """
         query = f'SELECT DISTINCT "LinkType" FROM {TRAFFIC_TABLE_NAME}'
-        result = self.db_manager.execute_query(uuid=self.request_id, query=query)
+        result = await self.db_manager._execute_query(uuid=self.request_id, query=query)
         return [r[0] for r in result["rows"] if r[0]]
     
     
-    def _get_max_min_time(self) -> str:
+    async def _get_max_min_time(self) -> str:
         """ Returns max and min time if available else n/a """
         query = f'SELECT MIN("Time"), MAX("Time") FROM {TRAFFIC_TABLE_NAME}'
         try:
-            result = self.db_manager.execute_query(uuid=self.request_id, query=query)
+            result = await self.db_manager._execute_query(uuid=self.request_id, query=query)
             min, max = result["rows"][0]
             return f"{min} -> {max}"
         except Exception as e:
             return "n/a"
         
 
-    def generate_sql(self, state: dict, runtime: Runtime[Context]) -> dict:
+    async def generate_sql(self, state: dict, runtime: Runtime[Context]) -> dict:
         """Create/Corrects SQL query for provided user question"""
         print(f"\ntraffic_agent :: generate_sql :: state :: {state}")
         self.request_id = state["request_id"]
         question = state["question"]
-        schema = self._get_schema()
+        schema = await self._get_schema()
+        business_facts = await get_business()
         do_repair = False   #Manages SQL correction
+        msgs = []
 
         if "sql_query" in state and state["sql_query"] and (state["error"] or state["sql_issues"]):
-            sql_faults = f'{state["error"]}\nIssues:{state["sql_issues"]}\n'
+            sql_faults = f'Errors:{state["error"]}\nIssues:{state["sql_issues"]}\n'
             print(f"\ntraffic_agent :: generate_sql :: sql_faults :: {sql_faults}")
             do_repair = True
 
         if do_repair:
             prompt = sql_repair_prompt(
-                db_type=MCP_DB_TYPE, business_facts=self.business_facts,
+                db_type=MCP_DB_TYPE, business_facts=business_facts,
                 schema=schema, question=question,
                 bad_sql=state["sql_query"], err=sql_faults
             )
         else:
-            lts = self._get_link_types()
-            when = self._get_max_min_time()
+            lts = await self._get_link_types()
+            when = await self._get_max_min_time()
 
-            memory = get_conversation_history(user_id=runtime.context.user_id,
+            memory = await get_conversation_history(user_id=runtime.context.user_id,
                                             params=["question", "answer"])
-            history = get_conversation_prompt(prev_conv=memory) if memory else None
+            history = conversation_prompt(prev_conv=memory) if memory else None
 
             prompt = sql_generate_prompt(
-                db_type=MCP_DB_TYPE, business_facts=self.business_facts,
+                db_type=MCP_DB_TYPE, business_facts=business_facts,
                 table_name=TRAFFIC_TABLE_NAME, schema=schema,
                 lts=lts, when=when, question=question,
                 prev_convo=history
             )
-        
-        print(f"\ntraffic_agent :: generate_sql :: do_repair :: {do_repair} :: prompt :: {prompt}")
-        sql_response = clean_sql(
-            self.llm_manager_rest.call(
-                prompt=prompt, model=SQL_MODEL, temperature=0.0
-            ))
 
-        msgs = [SystemMessage(content=prompt), AIMessage(sql_response)]
-    
-        if sql_response.strip() == "NOT_ENOUGH_INFO":
-            return {"messages": msgs, "sql_query": "NOT_RELEVANT"}
-        else:
-            return {"messages": msgs, "sql_query": sql_response, "sql_valid": True, "sql_issues": "", "error": ""}
+        try:
+            # print(f"\ntraffic_agent :: generate_sql :: do_repair :: {do_repair} :: prompt :: {prompt}")
+            print(f"\ntraffic_agent :: generate_sql :: do_repair :: {do_repair} :: prompt ")
+            sql_response = clean_sql(
+                await self.llm_manager.call(
+                    prompt=prompt, model=SQL_MODEL, temperature=0.0
+                ))
+
+            msgs = [SystemMessage(content=prompt), AIMessage(sql_response)]
+            if sql_response.strip() == "NOT_ENOUGH_INFO":
+                return {"messages": msgs, "sql_query": "NOT_RELEVANT"}
+            else:
+                return {"messages": msgs, "sql_query": sql_response, "sql_valid": True, "sql_issues": "", "error": ""}
+        except Exception as e:
+            _error = str(e)
+            return {"messages": msgs , "sql_query": "", "sql_valid": False, "sql_issues": "", "error": _error}
 
 
-    def review(self, state: dict):
+    async def review(self, state: dict):
         """Review SQL against original question"""
         print(f"\ntraffic_agent :: review :: state :: {state}")
         output_parser = JsonOutputParser()
         try:
-            review_prompt = get_review_prompt(state)
-            result = self.llm_manager_rest.call(
-                prompt=review_prompt,
+            _review_prompt = review_prompt(state)
+            result = await self.llm_manager_rest.call(
+                prompt=_review_prompt,
                 model=SQL_MODEL,
                 temperature=0.0
             )
@@ -197,8 +164,7 @@ class TrafficAgent:
             }
             
 
-
-    def summarize(self, state: dict) -> dict:
+    async def summarize(self, state: dict) -> dict:
         """Provide summary for user question"""
         print(f"\ntraffic_agent :: summarize :: state :: {state}")
         _error = ""
@@ -208,8 +174,8 @@ class TrafficAgent:
             return {"summary": f'Sorry, Please provide additional information. Original question : {state["question"]}'}
 
         try:
-            summary_prompt = get_summarize_prompt(state)
-            summary = self.llm_manager_rest.call(
+            summary_prompt = summarize_prompt(state)
+            summary = await self.llm_manager_rest.call(
                 prompt=summary_prompt,
                 model=SUMMARY_MODEL,
                 temperature=0.2
@@ -232,7 +198,7 @@ class TrafficAgent:
             }
 
 
-    def warmup(self, state: dict, runtime: Runtime[Context]) -> dict:
+    async def warmup(self, state: dict, runtime: Runtime[Context]) -> dict:
         print(f"\ntraffic_agent :: warmup :: state :: {state}")
         print(f"\ntraffic_agent :: warmup :: UID :: {runtime.context.user_id}")
         intent = intent_tag(state["question"])
@@ -243,8 +209,9 @@ class TrafficAgent:
         #     prompt = get_conversation_prompt(prev_conv=memory) if memory else None
             # self.llm_manager_rest.call(warmup=True, prompt=prompt)
         
-        if not warmup_done(user_id=runtime.context.user_id):
-            self.llm_manager_rest.call(warmup=True)
+        warmed_up = await warmup_done(user_id=runtime.context.user_id)
+        if not warmed_up:
+            await self.llm_manager_rest.call(warmup=True)
 
         return {
             "messages" : HumanMessage(content=state["question"]),
@@ -254,7 +221,7 @@ class TrafficAgent:
         }
     
 
-    def run_sql(self, state: dict) -> dict:
+    async def run_sql(self, state: dict) -> dict:
         """Execute query"""
         print(f"\ntraffic_agent :: run_sql :: state :: {state}")
         query = state["sql_query"]
@@ -269,7 +236,7 @@ class TrafficAgent:
             }
         
         try:
-            result = self.db_manager.execute_query(
+            result = await self.db_manager._execute_query(
                 uuid=state['request_id'], query=query)
             return {
                 "messages": ToolMessage(
@@ -284,5 +251,5 @@ class TrafficAgent:
                 }
         except Exception as e:
             return {"error": str(e), "sql_issues": str(e)}
-'''    
+  
 
