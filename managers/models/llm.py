@@ -53,6 +53,7 @@ class LLMManager:
                         # return resp.json()["response"]
                         response.raise_for_status()
                         llm_resp = await response.json()
+                        print(f"Model {log_model} returned : {llm_resp['response']}")
                         return llm_resp["response"]
                     
         except aiohttp.ClientConnectorError as e:

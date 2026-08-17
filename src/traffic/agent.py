@@ -121,12 +121,15 @@ class TrafficAgent:
 
         try:
             # print(f"\ntraffic_agent :: generate_sql :: do_repair :: {do_repair} :: prompt :: {prompt}")
-            print(f"\ntraffic_agent :: generate_sql :: do_repair :: {do_repair} :: prompt ")
-            sql_response = clean_sql(
-                await self.llm_manager.call(
-                    prompt=prompt, model=SQL_MODEL, temperature=0.0
-                ))
+            print(f"\ntraffic_agent :: generate_sql :: do_repair :: {do_repair} :: prompt")
+            query = await self.llm_manager.call(prompt=prompt, model=SQL_MODEL,
+                                                temperature=0.0)
+            if not query:   # Output generation FAILED
+                return {"sql_query": "", "sql_valid": False,
+                        "sql_issues": "Query creation failed",
+                        "error": "Query creation failed"}
 
+            sql_response = clean_sql(query)
             msgs = [SystemMessage(content=prompt), AIMessage(sql_response)]
             if sql_response.strip() == "NOT_ENOUGH_INFO":
                 return {"messages": msgs, "sql_query": "NOT_RELEVANT"}
@@ -175,11 +178,15 @@ class TrafficAgent:
 
         try:
             summary_prompt = summarize_prompt(state)
-            summary = await self.llm_manager.call(
-                prompt=summary_prompt,
-                model=SUMMARY_MODEL,
-                temperature=0.2
-            )
+            print(f"\ntraffic_agent :: summarize :: summary_prompt :: {bool(summary_prompt)}")
+            if summary_prompt:
+                summary = await self.llm_manager.call(
+                    prompt=summary_prompt,
+                    model=SUMMARY_MODEL,
+                    temperature=0.2
+                )
+            else:
+                summary = fallback_summarize(state)
             return {
                 "messages": [
                     SystemMessage(content=summary_prompt),
@@ -188,8 +195,7 @@ class TrafficAgent:
                 "summary": summary
                 }
         except Exception as e:
-            rows=state["results"] if "results" in state else []
-            summary = fallback_summarize(rows)
+            summary = fallback_summarize(state)
             _error = f"LLM summary unavailable. Issue encountered : {e}"
             return {
                 "messages": AIMessage(content=summary),
