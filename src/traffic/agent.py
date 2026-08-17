@@ -175,7 +175,7 @@ class TrafficAgent:
 
         try:
             summary_prompt = summarize_prompt(state)
-            summary = await self.llm_manager_rest.call(
+            summary = await self.llm_manager.call(
                 prompt=summary_prompt,
                 model=SUMMARY_MODEL,
                 temperature=0.2
@@ -211,7 +211,7 @@ class TrafficAgent:
         
         warmed_up = await warmup_done(user_id=runtime.context.user_id)
         if not warmed_up:
-            await self.llm_manager_rest.call(warmup=True)
+            await self.llm_manager.call(warmup=True)
 
         return {
             "messages" : HumanMessage(content=state["question"]),

@@ -32,7 +32,7 @@ async def manage_store(user_id: str):
                     for s in r_sorted[KEEP_FIRST_N: -KEEP_LAST_N]:
                         await store.adelete(ns, key=s.key)
     except Exception as e:
-        print(f"Error occurred during store read : {str(e)}")
+        print(f"Error occurred during store manage : {str(e)}")
         return False
 
 
@@ -83,14 +83,14 @@ async def clear_store(user_id: str, category: str = ""):
             if category:
                 namespaces = [(category, user_id)]
             else:
-                namespaces = await store.alist_namespaces(suffix=(user_id,))
-            async for ns in namespaces:
+                namespaces = await store.aalist_namespaces(suffix=(user_id,))
+            for ns in namespaces:
                 results = await store.asearch(ns, limit=50)
                 print(f"store :: clear :: UID {user_id} :: NS {ns} :: LEN {len(results)}")
-                async for r in results:
+                for r in results:
                     await store.adelete(ns, key=r.key)
     except Exception as e:
-        print(f"Error occurred during store read : {str(e)}")
+        print(f"Error occurred during store clear : {str(e)}")
 
 
 async def read_from_store(user_id: str, category: str, params: list[str] = []) -> list[dict]:
@@ -111,7 +111,7 @@ async def read_from_store(user_id: str, category: str, params: list[str] = []) -
                     result_set = [r for r in results]
             return result_set
     except Exception as e:
-        print(f"Error occurred during store write : {str(e)}")
+        print(f"Error occurred during store read : {str(e)}")
         return []
 
 
