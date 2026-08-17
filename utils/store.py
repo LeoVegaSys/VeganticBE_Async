@@ -30,8 +30,8 @@ async def manage_store(user_id: str):
                 print(f"store :: manage :: UID {user_id} :: NS {ns} :: LEN {len(results)}")
                 if len(results) > KEEP_THRESHOLD:
                     r_sorted = sorted(results, key=lambda x: x.updated_at)
-                    for s in r_sorted[KEEP_FIRST_N: -KEEP_LAST_N]:
-                        await store.adelete(ns, key=s.key)
+                    to_delete = [store.adelete(ns, key=s.key) for s in r_sorted[KEEP_FIRST_N: -KEEP_LAST_N]]
+                    await asyncio.gather(*to_delete)
     except Exception as e:
         print(f"Error occurred during store manage : {str(e)}")
         return False
@@ -88,8 +88,8 @@ async def clear_store(user_id: str, category: str = ""):
             for ns in namespaces:
                 results = await store.asearch(ns, limit=50)
                 print(f"store :: clear :: UID {user_id} :: NS {ns} :: LEN {len(results)}")
-                for r in results:
-                    await store.adelete(ns, key=r.key)
+                to_delete = [store.adelete(ns, key=r.key) for r in results]
+                await asyncio.gather(*to_delete)
     except Exception as e:
         print(f"Error occurred during store clear : {str(e)}")
 
