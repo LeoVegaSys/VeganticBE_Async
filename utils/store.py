@@ -1,4 +1,5 @@
 import json
+import asyncio
 
 from langgraph.store.redis.aio import AsyncRedisStore
 
@@ -83,7 +84,7 @@ async def clear_store(user_id: str, category: str = ""):
             if category:
                 namespaces = [(category, user_id)]
             else:
-                namespaces = await store.aalist_namespaces(suffix=(user_id,))
+                namespaces = await store.alist_namespaces(suffix=(user_id,))
             for ns in namespaces:
                 results = await store.asearch(ns, limit=50)
                 print(f"store :: clear :: UID {user_id} :: NS {ns} :: LEN {len(results)}")

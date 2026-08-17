@@ -1,5 +1,5 @@
 from uuid import uuid4
-
+import asyncio
 
 from langgraph.graph import END, START
 from langgraph.graph import StateGraph
@@ -24,9 +24,6 @@ async def classify_query(state: dict, runtime: Runtime[Context]) -> str:
     #is_approved = interrupt("Do you want to proceed with this action?")
 
     await manage_store(user_id=runtime.context.user_id)
-    # Write question to store
-    await add_to_memories(user_id=runtime.context.user_id, param_key="question", 
-                          data=state["question"])
     return route_query(question=state["question"].lower())
 
 
@@ -35,11 +32,19 @@ async def call_traffic_graph(state: InputState, runtime: Runtime[Context]):
     result = await TrafficWorkflowManager().run_traffic_agent(
         question=state["question"], summarize=state["summarize"], 
         request_id=state["request_id"], mcp_server=state["mcp_server"])
-    # Write result to store
-    await add_to_memories(
+    
+    add_q_coro = asyncio.create_task(add_to_memories(
+        user_id=runtime.context.user_id, param_key="question", 
+        data=state["question"]))
+    add_ans_coro = asyncio.create_task(add_to_memories(
         user_id=runtime.context.user_id, param_key="answer", data=result, 
         fields_to_copy=["sql_query", "summary", "error"]
-    )
+    ))
+    # Write question to store
+    await add_q_coro
+    # Write result to store
+    await add_ans_coro
+
     print(f"\ntrafficGraph :: call_traffic_graph :: result :: {result}")
     return result
 

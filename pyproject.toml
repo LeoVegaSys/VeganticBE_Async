@@ -17,5 +17,6 @@ dependencies = [
     "langgraph-checkpoint-redis>=0.5.1",
     "langgraph-swarm>=0.1.0",
     "mcp-server-motherduck>=1.0.7",
+    "podman>=5.8.0",
     "python-dotenv>=1.2.2",
 ]

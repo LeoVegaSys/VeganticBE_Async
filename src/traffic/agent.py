@@ -1,4 +1,5 @@
 import json
+import asyncio
 
 from langgraph.types import Command
 from langgraph.runtime import Runtime
@@ -23,15 +24,6 @@ class TrafficAgent:
     def __init__(self):
         self.db_manager = DatabaseManager()
         self.llm_manager = LLMManager()
-
-    async def _get_schema(self) -> str:
-        """ 
-        Returns comma-separated string of concatenated column names and their datatypes 
-        """
-        query = f"SELECT column_name, data_type FROM information_schema.columns \
-        WHERE table_name = '{TRAFFIC_TABLE_NAME}' ORDER BY ordinal_position"
-        result = await self.db_manager._execute_query(uuid=self.request_id, query=query)
-        return ", ".join(f'"{c}" {t}' for c, t in result["rows"])
 
 
     def repair_sql(self, state: dict) -> dict:
@@ -88,8 +80,12 @@ class TrafficAgent:
         print(f"\ntraffic_agent :: generate_sql :: state :: {state}")
         self.request_id = state["request_id"]
         question = state["question"]
-        schema = await self._get_schema()
-        business_facts = await get_business()
+
+        get_schema_coro = asyncio.create_task(self._get_schema())
+        get_business_coro = asyncio.create_task(get_business())
+        schema = await get_schema_coro
+        business_facts = await get_business_coro
+
         do_repair = False   #Manages SQL correction
         msgs = []
 
@@ -105,11 +101,15 @@ class TrafficAgent:
                 bad_sql=state["sql_query"], err=sql_faults
             )
         else:
-            lts = await self._get_link_types()
-            when = await self._get_max_min_time()
+            get_lts_coro = asyncio.create_task(self._get_link_types())
+            get_when_coro = asyncio.create_task(self._get_max_min_time())
+            get_conv_hist_coro = asyncio.create_task(get_conversation_history(
+                user_id=runtime.context.user_id, params=["question", "answer"]))
 
-            memory = await get_conversation_history(user_id=runtime.context.user_id,
-                                            params=["question", "answer"])
+            lts = await get_lts_coro
+            when = await get_when_coro
+            memory = await get_conv_hist_coro
+
             history = conversation_prompt(prev_conv=memory) if memory else None
 
             prompt = sql_generate_prompt(
