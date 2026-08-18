@@ -27,7 +27,7 @@ def get_available_port(model: str) :
 
     print(f"MDL :: {model} :: PRTS :: {ports_list}")
     try:
-        with PodmanClient(base_url) as client:
+        with PodmanClient(base_url=base_url) as client:
             containers = client.containers.list(filters={"status": "running"})
             print(f"Running containers count :: {len(containers)}")
             for c in containers:
@@ -35,8 +35,10 @@ def get_available_port(model: str) :
                     n_running_procs = len(c.top()['Processes'])
                     print(f"CNAME :: {c.name} :: PROCS_COUNT :: {n_running_procs}")
                     if n_running_procs < 2:
-                        c_port_num = int(c.ports['11434/tcp'][0]['HostPort'])
-                        c_host = c.ports['11434/tcp'][0]['HostIp']
+                        c_port_info = c.inspect()['NetworkSettings']['Ports']['11434/tcp'][0]
+                        print(f"{c.name} :: CPRTS :: {c_port_info}")
+                        c_port_num = int(c_port_info['HostPort'])
+                        c_host = c_port_info['HostIp']
                         if c_port_num in ports_list:
                             print(f"FOUND :: {c.name} :: {c_host} :: {c_port_num}")
                             res_host = c_host
@@ -47,4 +49,5 @@ def get_available_port(model: str) :
     except Exception as e:
         print(f"Podman connection failed with error : {str(e)}")
     finally:
+        print(f"Returning ({res_host},{res_port})")
         return (res_host, res_port)

@@ -47,7 +47,7 @@ async def call_traffic_graph(state: InputState, runtime: Runtime[Context]):
 
 
 async def call_dip_graph(state: InputState, runtime: Runtime[Context]):
-    print(f"\call_dip_graph :: state :: {state}")
+    print(f"\ncall_dip_graph :: state :: {state}")
     pass
 
 
