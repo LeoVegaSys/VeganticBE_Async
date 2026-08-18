@@ -6,6 +6,7 @@ run the ollama queries in parallel over multiple
 podmans.
 '''
 import os
+import random
 from podman import PodmanClient
 
 from config.llm import LLM_PODMAN_PREFIX, LLM_PORT_CONFIG, OLLAMA_HOST
@@ -24,7 +25,7 @@ def get_available_port(model: str) :
     ports_list = LLM_PORT_CONFIG[model]
     res_host = OLLAMA_HOST
     res_port = ports_list[0]
-
+    found = False
     print(f"MDL :: {model} :: PRTS :: {ports_list}")
     try:
         with PodmanClient(base_url=base_url) as client:
@@ -40,6 +41,7 @@ def get_available_port(model: str) :
                         c_port_num = int(c_port_info['HostPort'])
                         c_host = c_port_info['HostIp']
                         if c_port_num in ports_list:
+                            found = True
                             print(f"FOUND :: {c.name} :: {c_host} :: {c_port_num}")
                             res_host = c_host
                             res_port = c_port_num
@@ -50,4 +52,6 @@ def get_available_port(model: str) :
         print(f"Podman connection failed with error : {str(e)}")
     finally:
         print(f"Returning ({res_host},{res_port})")
+        if not found:
+            res_port = int(random.choice(ports_list))
         return (res_host, res_port)
