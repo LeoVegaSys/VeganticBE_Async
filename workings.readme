@@ -149,3 +149,8 @@ LLM PORT CONFIG (stored in llm_port_config.py):
 
 LLM_PORT_CONFIG is designed to allow models to be run on different ports of different containers.
 It is a mapping of the models against their respective ports
+
+
+
+WORKING WITH GPUs
+## Reference : https://oneuptime.com/blog/post/2026-03-18-run-nvidia-gpu-containers-podman/view
