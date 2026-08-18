@@ -33,17 +33,14 @@ async def call_traffic_graph(state: InputState, runtime: Runtime[Context]):
         question=state["question"], summarize=state["summarize"], 
         request_id=state["request_id"], mcp_server=state["mcp_server"])
     
-    add_q_coro = asyncio.create_task(add_to_memories(
-        user_id=runtime.context.user_id, param_key="question", 
-        data=state["question"]))
-    add_ans_coro = asyncio.create_task(add_to_memories(
-        user_id=runtime.context.user_id, param_key="answer", data=result, 
-        fields_to_copy=["sql_query", "summary", "error"]
-    ))
     # Write question to store
-    await add_q_coro
+    await add_to_memories(user_id=runtime.context.user_id,
+                          param_key="question",
+                          data=state["question"])
     # Write result to store
-    await add_ans_coro
+    await add_to_memories(user_id=runtime.context.user_id, param_key="answer",
+                          data=result,
+                          fields_to_copy=["sql_query", "summary", "error"])
 
     print(f"\ntrafficGraph :: call_traffic_graph :: result :: {result}")
     return result

@@ -2,6 +2,7 @@ import asyncio
 import aiohttp
 
 from config.llm import *
+from managers.models.llm_pool import get_available_port
 
 
 class LLMManager:
@@ -25,7 +26,8 @@ class LLMManager:
             warmup: bool = False,
     ):
         log_model = model if model else self._model
-        self._port: int = LLM_PORT_CONFIG.get(log_model, OLLAMA_PORT)
+        self._host, self._port = get_available_port(log_model)
+        # self._port: int = LLM_PORT_CONFIG.get(log_model, OLLAMA_PORT)
         req_url = url if url else f"http://{self._host}:{self._port}/api/generate"
 
         req_timeout = timeout if timeout else self._timeout
