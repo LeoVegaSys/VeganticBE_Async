@@ -28,9 +28,9 @@ class TrafficAgent:
         self.log = FileLogger()
 
 
-    def repair_sql(self, state: dict) -> dict:
+    async def repair_sql(self, state: dict) -> dict:
         """Validate and fix SQL"""
-        self.log.write(f"\ntraffic_agent :: repair_sql :: state :: {state}")
+        await self.log.write(f"\ntraffic_agent :: repair_sql :: state :: {state}")
         retries = state["repairs_left"]
         ### If retries are left or issues raised in prior run, rerun loop at generate sql func
         try:
@@ -79,23 +79,23 @@ class TrafficAgent:
 
     async def generate_sql(self, state: dict, runtime: Runtime[Context]) -> dict:
         """Create/Corrects SQL query for provided user question"""
-        self.log.write(f"\ntraffic_agent :: generate_sql :: state :: {state}")
+        await self.log.write(f"\ntraffic_agent :: generate_sql :: state :: {state}")
         self.request_id = state["request_id"]
         question = state["question"]
 
         get_schema_coro = asyncio.create_task(self._get_schema())
         get_business_coro = asyncio.create_task(get_business())
-        schema = await get_schema_coro
-        business_facts = await get_business_coro
 
         do_repair = False   #Manages SQL correction
         msgs = []
 
         if "sql_query" in state and state["sql_query"] and (state["error"] or state["sql_issues"]):
             sql_faults = f'Errors:{state["error"]}\nIssues:{state["sql_issues"]}\n'
-            self.log.write(f"\ntraffic_agent :: generate_sql :: sql_faults :: {sql_faults}")
+            await self.log.write(f"\ntraffic_agent :: generate_sql :: sql_faults :: {sql_faults}")
             do_repair = True
 
+        schema = await get_schema_coro
+        business_facts = await get_business_coro
         if do_repair:
             prompt = sql_repair_prompt(
                 db_type=MCP_DB_TYPE, business_facts=business_facts,
@@ -108,12 +108,11 @@ class TrafficAgent:
             get_conv_hist_coro = asyncio.create_task(get_conversation_history(
                 user_id=runtime.context.user_id, params=["question", "answer"]))
 
-            lts = await get_lts_coro
-            when = await get_when_coro
             memory = await get_conv_hist_coro
-
             history = conversation_prompt(prev_conv=memory) if memory else None
 
+            lts = await get_lts_coro
+            when = await get_when_coro
             prompt = sql_generate_prompt(
                 db_type=MCP_DB_TYPE, business_facts=business_facts,
                 table_name=TRAFFIC_TABLE_NAME, schema=schema,
@@ -122,7 +121,7 @@ class TrafficAgent:
             )
 
         try:
-            self.log.write(f"\ntraffic_agent :: generate_sql :: do_repair :: {do_repair} :: prompt :: {prompt}")
+            await self.log.write(f"\ntraffic_agent :: generate_sql :: do_repair :: {do_repair} :: prompt :: {prompt}")
             print(f"\ntraffic_agent :: generate_sql :: do_repair :: {do_repair} :: prompt")
             query = await self.llm_manager.call(prompt=prompt, model=SQL_MODEL,
                                                 temperature=0.0)
@@ -144,7 +143,7 @@ class TrafficAgent:
 
     async def review(self, state: dict):
         """Review SQL against original question"""
-        self.log.write(f"\ntraffic_agent :: review :: state :: {state}")
+        await self.log.write(f"\ntraffic_agent :: review :: state :: {state}")
         output_parser = JsonOutputParser()
         try:
             _review_prompt = review_prompt(state)
@@ -171,7 +170,7 @@ class TrafficAgent:
 
     async def summarize(self, state: dict) -> dict:
         """Provide summary for user question"""
-        self.log.write(f"\ntraffic_agent :: summarize :: state :: {state}")
+        await self.log.write(f"\ntraffic_agent :: summarize :: state :: {state}")
         _error = ""
         if not state["summarize"]:
             return 
@@ -180,7 +179,7 @@ class TrafficAgent:
 
         try:
             summary_prompt = summarize_prompt(state)
-            self.log.write(f"\ntraffic_agent :: summarize :: summary_prompt :: {summary_prompt}")
+            await self.log.write(f"\ntraffic_agent :: summarize :: summary_prompt :: {summary_prompt}")
             print(f"\ntraffic_agent :: summarize :: summary_prompt :: {bool(summary_prompt)}")
             if summary_prompt:
                 summary = await self.llm_manager.call(
@@ -208,7 +207,7 @@ class TrafficAgent:
 
 
     async def warmup(self, state: dict, runtime: Runtime[Context]) -> dict:
-        self.log.write(f"\ntraffic_agent :: warmup :: state :: {state}")
+        await self.log.write(f"\ntraffic_agent :: warmup :: state :: {state}")
         print(f"\ntraffic_agent :: warmup :: UID :: {runtime.context.user_id}")
         intent = intent_tag(state["question"])
 
@@ -232,7 +231,7 @@ class TrafficAgent:
 
     async def run_sql(self, state: dict) -> dict:
         """Execute query"""
-        print(f"\ntraffic_agent :: run_sql :: state :: {state}")
+        await self.log.write(f"\ntraffic_agent :: run_sql :: state :: {state}")
         query = state["sql_query"]
         _lquery = query.lower().lstrip()
         if query == "NOT_RELEVANT":
@@ -260,5 +259,3 @@ class TrafficAgent:
                 }
         except Exception as e:
             return {"error": str(e), "sql_issues": str(e)}
-  
-

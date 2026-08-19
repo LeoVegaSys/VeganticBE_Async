@@ -142,7 +142,7 @@ class DipAgent:
     async def summarize(self, state: dict) -> dict:
         """Provide additional summary"""
         
-        self.log.write(f"\ndip_agent :: summarize :: state :: {state}")
+        await self.log.write(f"\ndip_agent :: summarize :: state :: {state}")
         if state["summarize"]:
             try:
                 summary_prompt = summarize_prompt(state)
@@ -183,7 +183,7 @@ class DipAgent:
         the question text; effective values used are returned in `params_used`
         so the caller/frontend can show exactly what filter was applied.
         Returns (sql, cols, rows, ms, params_used)."""
-        self.log.write(f"\ndip_agent :: dip_detect :: state :: {state}")
+        await self.log.write(f"\ndip_agent :: dip_detect :: state :: {state}")
         self.request_id = state['request_id']
         self.question = state['question']
         self.qn_low = self.question.lower()
