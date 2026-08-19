@@ -33,10 +33,17 @@ def get_available_port(model: str):
     '''
     # Rootless podman sock
     base_url=f"unix:///run/user/{os.getuid()}/podman/podman.sock"
-    ports_list = LLM_PORT_CONFIG[model] # LLM model-specific ports
     res_host = OLLAMA_HOST
+    try:
+        ports_list = LLM_PORT_CONFIG[model] # LLM model-specific ports
+    except Exception as e:
+        raise Exception(f"{model} port/s not defined in LLM config file.")
+
+    if not isinstance(ports_list, list):
+        # If only one port is assigned to LLM
+        return (res_host, ports_list)
+
     res_port = ports_list[0]
-    found = False
     print(f"MDL :: {model} :: PRTS :: {ports_list}")
     try:
         with PodmanClient(base_url=base_url) as client:
@@ -51,25 +58,20 @@ def get_available_port(model: str):
                     # Get total utilization of running podman processes
                     c_util = get_total_utiln(c.top(ps_args=['pcpu'])['Processes'])
                     print(f"CNAME :: {c.name} :: PROCS_COUNT :: {n_running_procs} :: UTIL :: {c_util}")
-                    if (n_running_procs < 2) or (c_util < 100.0):
+                    if (n_running_procs < 2) or (c_util < 10.0):
                         # Get podman host port details
                         c_port_info = c.inspect()['NetworkSettings']['Ports']['11434/tcp'][0]
                         print(f"{c.name} :: CPRTS :: {c_port_info}")
                         c_port_num = int(c_port_info['HostPort'])
                         c_host = c_port_info['HostIp']
                         if c_port_num in ports_list:
-                            found = True
                             print(f"FOUND :: {c.name} :: {c_host} :: {c_port_num}")
                             res_host = c_host
                             res_port = c_port_num
-                            break
-                    else:
-                        continue
+                            return (res_host, res_port)
     except Exception as e:
         print(f"Podman connection failed with error : {str(e)}")
-    finally:
-        print(f"Returning ({res_host},{res_port})")
-        if not found:
-            # Randomly assign if all podmans are loaded
-            res_port = int(random.choice(ports_list))
-        return (res_host, res_port)
+    # Randomly assign if all podmans are loaded
+    res_port = int(random.choice(ports_list))
+    print(f"NOT FOUND :: Returning ({res_host},{res_port})")
+    return (res_host, res_port)

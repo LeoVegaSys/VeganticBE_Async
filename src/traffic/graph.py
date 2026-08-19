@@ -2,12 +2,11 @@ from langgraph.graph import StateGraph, START, END
 
 from src.traffic.state import TrafficState, TrafficOutputState
 from src.traffic.agent import TrafficAgent
-from utils.context import QueryRequest
 
 
 class TrafficWorkflowManager:
     def __init__(self):
-        self.sql_agent=TrafficAgent()
+        self.agent=TrafficAgent()
 
     def create_workflow(self) -> StateGraph:
         """Create and configure the workflow graph."""
@@ -15,12 +14,12 @@ class TrafficWorkflowManager:
                               input_schema=TrafficState,
                               output_schema=TrafficOutputState)
 
-        workflow.add_node("warmup", self.sql_agent.warmup)
-        workflow.add_node("generate_sql", self.sql_agent.generate_sql)
-        workflow.add_node("run_sql", self.sql_agent.run_sql)
-        workflow.add_node("repair_sql", self.sql_agent.repair_sql)
-        workflow.add_node("summarize", self.sql_agent.summarize)
-        workflow.add_node("review", self.sql_agent.review)
+        workflow.add_node("warmup", self.agent.warmup)
+        workflow.add_node("generate_sql", self.agent.generate_sql)
+        workflow.add_node("run_sql", self.agent.run_sql)
+        workflow.add_node("repair_sql", self.agent.repair_sql)
+        workflow.add_node("summarize", self.agent.summarize)
+        workflow.add_node("review", self.agent.review)
 
         workflow.add_edge("warmup", "generate_sql")
         workflow.add_edge("generate_sql", "run_sql")

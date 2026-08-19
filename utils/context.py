@@ -1,5 +1,6 @@
 from typing import Union
 from dataclasses import dataclass
+from pydantic import BaseModel
 
 from config.mcp import MCP_DB_TYPE
 
@@ -24,3 +25,15 @@ class QueryRequest:
         return True if isinstance(body, dict) else False
 
 
+class Ask(BaseModel):
+    question : str | None = None
+    user_response : str | None = None
+    mcp_server : str | None = MCP_DB_TYPE
+    summarize : bool = False
+    request_id : str | None = None
+    session_id : str | None = None
+    user_id : str | None = None
+
+
+class Feedback(BaseModel):
+    pass

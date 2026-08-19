@@ -1,10 +1,15 @@
 import json
+import orjson
 from aiohttp import web
 import aiohttp_cors
+from fastapi import FastAPI, Request, Response
+from fastapi.middleware.cors import CORSMiddleware
+from granian import Granian
+import uvloop
 
 from config.server import SERVER_HOST
 from src.startpoint.graph import WorkflowManager
-from utils.context import QueryRequest
+from utils.context import QueryRequest, Ask, Feedback
 
 
 
@@ -60,9 +65,44 @@ async def init_app():
 
     return app
 
+
+async def init_fast_app():
+    app = FastAPI()
+
+    @app.post("/ask")
+    async def user_query(request: Ask):
+        try:
+            if not request:
+                return Response(
+                    content={"error": "Invalid request structure"},
+                    status_code=400  # Bad Request
+                )
+            res = await WorkflowManager().answer_query(request=request)
+            payload = orjson.dumps(res, default=str)
+            return Response(content=payload)
+        except Exception as e:
+            return Response(content={"error": str(e)}, status_code=500)
+
+    @app.post("/feedback")
+    async def user_feedback(request: Feedback):
+        return Response(content={"received": request})
+
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["*"],
+        allow_credentials=False,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+
+    return app
+
+
 # 4. Run the server on a specific port
 def serve(port):
 # if __name__ == '__main__':
     # web.run_app manages the asyncio event loop automatically
     # Set host='127.0.0.1' and port=8080 as requested
-    web.run_app(init_app(), host=SERVER_HOST, port=port)
+    # web.run_app(init_app(), host=SERVER_HOST, port=port)
+    Granian(init_fast_app(), address=SERVER_HOST, port=port, interface='asgi',
+            loop=uvloop, workers=4, runtime_threads=2).serve()

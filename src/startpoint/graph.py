@@ -11,9 +11,10 @@ from langchain_core.runnables import RunnableConfig
 
 from src.startpoint.state import InputState, OutputState
 from src.traffic.graph import TrafficWorkflowManager
+from src.dip.graph import DipWorkflowManager
 from utils.store import manage_store, add_to_memories, get_ttl_config
 from utils.categorize import route_query
-from utils.context import Context, QueryRequest
+from utils.context import Context, QueryRequest, Ask
 from config.redis import REDIS_HOST, REDIS_PORT
 
 async def classify_query(state: dict, runtime: Runtime[Context]) -> str:
@@ -48,7 +49,20 @@ async def call_traffic_graph(state: InputState, runtime: Runtime[Context]):
 
 async def call_dip_graph(state: InputState, runtime: Runtime[Context]):
     print(f"\ncall_dip_graph :: state :: {state}")
-    pass
+    result = await DipWorkflowManager().run_dip_agent(
+            question=state["question"], summarize=state["summarize"], 
+            request_id=state["request_id"], mcp_server=state["mcp_server"])
+        
+    # Write question to store
+    await add_to_memories(user_id=runtime.context.user_id,
+                            param_key="question",
+                            data=state["question"])
+    # Write result to store
+    await add_to_memories(user_id=runtime.context.user_id, param_key="answer",
+                            data=result,
+                            fields_to_copy=["sql_query", "summary", "error"])
+    print(f"\ndipGraph :: ncall_dip_graph :: result :: {result}")
+    return result
 
 
 
@@ -68,44 +82,13 @@ class WorkflowManager:
         workflow.add_edge("run_traffic", END)
         workflow.add_edge("run_dip", END)
 
-        '''
-        # Deterministic non-LLM-using
-        workflow.add_node("calculate_dip", self.dip_agent.dip_detect)
-        workflow.add_node("summarize_dip", self.dip_agent.summarize)
-
-        # LLM-using
-        workflow.add_node("parse_question", self.sql_agent.parse_question)
-        workflow.add_node("get_unique_nouns", self.sql_agent.get_unique_nouns)
-        workflow.add_node("generate_sql", self.sql_agent.generate_sql)
-        workflow.add_node("validate_and_fix_sql", self.sql_agent.validate_and_fix_sql)
-        workflow.add_node("execute_sql", self.sql_agent.execute_sql)
-        workflow.add_node("format_results", self.sql_agent.format_results)
-        workflow.add_node("choose_visualization", self.sql_agent.choose_visualization)
-        workflow.add_node("format_data_for_visualization", self.data_formatter.format_data_for_visualization)
-        
-        # Define edges
-        workflow.add_conditional_edges(START, get_query_type)
-
-        workflow.add_edge("calculate_dip", "summarize_dip")
-        workflow.add_edge("summarize_dip", END)
-
-        workflow.add_edge("parse_question", "get_unique_nouns")
-        workflow.add_edge("get_unique_nouns", "generate_sql")
-        workflow.add_edge("generate_sql", "validate_and_fix_sql")
-        workflow.add_edge("validate_and_fix_sql", "execute_sql")
-        workflow.add_edge("execute_sql", "format_results")
-        workflow.add_edge("execute_sql", "choose_visualization")
-        workflow.add_edge("choose_visualization", "format_data_for_visualization")
-        workflow.add_edge("format_data_for_visualization", END)
-        workflow.add_edge("format_results", END)
-        # workflow.set_entry_point("categorize")
-        '''
         return workflow
     
     def returnGraph(self):
         return self.create_workflow().compile()
 
-    async def answer_query(self, request: QueryRequest) -> dict:
+    # async def answer_query(self, request: QueryRequest) -> dict:
+    async def answer_query(self, request: Ask) -> dict:
         """
         Run the agent workflow and return the formatted answer.
         """
