@@ -1,8 +1,9 @@
-from typing import Union
-
 import os
-import json
+import orjson
 import aiofiles
+from typing import Union
+from functools import partial
+from fastlogging import LogInit
 
 from config.log import FEEDBACK_LOG_FILE, LOG_FILE, LOG_LOCATION
 
@@ -12,6 +13,16 @@ class FileLogger:
         self.log_file = LOG_FILE
         self.feedback_log_file = FEEDBACK_LOG_FILE
         self.log_path = self._get_log_folder()
+
+    def get_logger(self, feedback: bool = False):
+        # Fastlogging specifics
+        _f = partial(LogInit, domain="Vegayan", maxSize=81920, console=False,
+                    backupCnt=5, indent=(0,2,8), encoding='utf-8',
+                    useThreads=True)
+        _file = self.feedback_log_file if feedback else self.log_file
+        _path = os.path.join(self.log_path, _file)
+        self.logger = _f(pathName=_path)
+        return self.logger
 
     @staticmethod
     def _get_log_folder() -> str:
@@ -26,7 +37,7 @@ class FileLogger:
         write_to_file = os.path.join(self.log_path, _file)
         try:
             async with aiofiles.open(write_to_file, mode='a', encoding='utf-8') as f:
-                await f.write(json.dumps(content, default=str) + "\n")
+                await f.write(orjson.dumps(content).decode('utf-8') + "\n")
         except FileNotFoundError:
             print(f"Error: The directory for '{write_to_file}' does not exist.")
         except PermissionError:
