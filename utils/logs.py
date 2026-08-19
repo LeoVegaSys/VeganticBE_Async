@@ -16,7 +16,9 @@ class FileLogger:
     @staticmethod
     def _get_log_folder() -> str:
         current_dir = os.path.dirname(os.path.abspath(__file__))
-        return os.path.join(current_dir, '..', LOG_LOCATION)
+        log_path = os.path.join(current_dir, '..', LOG_LOCATION)
+        os.makedirs(log_path, exist_ok=True)
+        return log_path
         
     async def write(self, content: Union[str, dict], feedback: bool = False):
         '''Writes to log file based on input params'''

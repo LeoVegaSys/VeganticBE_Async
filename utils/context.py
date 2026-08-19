@@ -17,10 +17,11 @@ class QueryRequest:
         self.question = body.get("question", "").strip()
         self.user_response = body.get("user_response", "").strip()
         self.mcp_server = body.get("db_type", MCP_DB_TYPE)
-        self.summarize = not body.get("no_summary", False)
-        self.request_id = body.get("request_id", f"req_{random.choice(REQUESTS)}")
-        self.session_id = body.get("session_id", f"sess_{random.choice(SESSIONS)}")
-        self.user_id = body.get("user_id", f"user_{random.choice(USERS)}")
+        _no_summary = body.get("no_summary", False)
+        self.summarize = not body.get("summarize", _no_summary)
+        self.request_id = body.get("request_id", f"req_{random.choice(range(REQUESTS))}")
+        self.session_id = body.get("session_id", f"sess_{random.choice(range(SESSIONS))}")
+        self.user_id = body.get("user_id", f"user_{random.choice(range(USERS))}")
 
     def is_valid(self, body):
         return True if isinstance(body, dict) else False
