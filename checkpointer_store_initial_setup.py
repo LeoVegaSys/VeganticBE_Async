@@ -14,12 +14,17 @@ async def main():
     """
     redis_uri = f"{STORE_DB}://{REDIS_HOST}:{REDIS_PORT}"
     pg_uri = f"{CHECKPOINTER_DB}://{PG_USER}:{PG_PWD}@{PG_HOST}:{PG_PORT}/{PG_DB_NAME}"
+    conn_kwargs = {
+        "autocommit": True,
+        "prepare_threshold": 0,
+    }
     # with RedisStore.from_conn_string(redis_uri) as store:
         # store.setup()
         # Remember to check TTL config before uncommenting above setup function
         # pass
 
-    async with AsyncConnectionPool(conninfo=pg_uri, max_size=4) as pool:
+    async with AsyncConnectionPool(conninfo=pg_uri, max_size=4,
+                                   kwargs=conn_kwargs) as pool:
         checkpointer = AsyncPostgresSaver(pool)
         print(f"Starting setup :: {pg_uri}")
         checkpointer.setup()

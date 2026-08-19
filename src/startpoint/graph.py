@@ -93,12 +93,14 @@ class WorkflowManager:
         Run the agent workflow and return the formatted answer.
         """
         print(f"\nGraph :: answer_query :: req {request.__dict__}")
-        
+
         store_uri = f"{STORE_DB}://{REDIS_HOST}:{REDIS_PORT}"
         pg_uri = f"{CHECKPOINTER_DB}://{PG_USER}:{PG_PWD}@{PG_HOST}:{PG_PORT}/{PG_DB_NAME}"
+        conn_kwargs = {"autocommit": True, "prepare_threshold": 0}
 
         async with AsyncRedisStore.from_conn_string(store_uri, ttl=get_ttl_config()) as store:
-            async with AsyncConnectionPool(conninfo=pg_uri, max_size=20) as pool:
+            async with AsyncConnectionPool(conninfo=pg_uri, max_size=20,
+                                           kwargs=conn_kwargs) as pool:
                 checkpointer = AsyncPostgresSaver(pool)
 
                 app = self.create_workflow().compile(store=store, checkpointer=checkpointer)
