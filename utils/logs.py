@@ -17,8 +17,7 @@ class FileLogger:
     def get_logger(self, feedback: bool = False):
         # Fastlogging specifics
         _f = partial(LogInit, domain="Vegayan", maxSize=81920, console=False,
-                    backupCnt=5, indent=(0,2,8), encoding='utf-8',
-                    useThreads=True)
+                    backupCnt=5, indent=(0,2,8), encoding='utf-8')
         _file = self.feedback_log_file if feedback else self.log_file
         _path = os.path.join(self.log_path, _file)
         self.logger = _f(pathName=_path)

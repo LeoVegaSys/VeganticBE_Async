@@ -122,7 +122,7 @@ class WorkflowManager:
                             "mcp_server": request.mcp_server},
                         config=config, context=context)
 
-                snapshot = app.get_state(config)
+                snapshot = await app.aget_state(config)
                 if snapshot.interrupts:
                     result["user_input_required"] = snapshot.interrupts[0].value
 

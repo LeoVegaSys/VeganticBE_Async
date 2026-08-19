@@ -27,7 +27,7 @@ async def main():
                                    kwargs=conn_kwargs) as pool:
         checkpointer = AsyncPostgresSaver(pool)
         print(f"Starting setup :: {pg_uri}")
-        checkpointer.setup()
+        # await checkpointer.setup()
         print(f"Setup done!!!")
         pass
 
