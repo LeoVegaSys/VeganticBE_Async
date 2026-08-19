@@ -2,10 +2,10 @@ import os
 import sys
 import json
 import argparse
+import asyncio
 
 from config.mcp import MCP_DB_PATH, MCP_DB_TYPE
 from config.server import SERVER_PORT
-# from src.traffic.graph import TrafficWorkflowManager
 from server.apis import serve
 
 
@@ -21,7 +21,7 @@ def main():
         print(f"\nQ : {question}\nA : {answer}\n")
 """
 
-def main():
+async def main():
     ap = argparse.ArgumentParser()
     # ap.add_argument("question", nargs="*")
     # ap.add_argument("user_response", nargs="*")
@@ -43,7 +43,7 @@ def main():
         sys.exit(f"DB not found: {DB_PATH} (set TRAFFIC_DB or --db)")
     '''
     if args.serve:
-        serve(args.port); return
+        await serve(args.port); return
     
     '''TODO : Interrupt NOT integrated below'''
     """
@@ -66,4 +66,5 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    # main()
+    asyncio.run(main())
