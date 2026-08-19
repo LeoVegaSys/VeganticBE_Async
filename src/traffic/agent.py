@@ -8,6 +8,7 @@ from langchain_core.output_parsers import JsonOutputParser
 
 from managers.database.db import DatabaseManager
 from managers.models.llm import LLMManager
+from utils.logs import FileLogger
 from utils.skills import get_business
 from utils.context import Context
 from utils.clean import clean_sql
@@ -24,11 +25,12 @@ class TrafficAgent:
     def __init__(self):
         self.db_manager = DatabaseManager()
         self.llm_manager = LLMManager()
+        self.log = FileLogger()
 
 
     def repair_sql(self, state: dict) -> dict:
         """Validate and fix SQL"""
-        print(f"\ntraffic_agent :: repair_sql :: state :: {state}")
+        self.log.write(f"\ntraffic_agent :: repair_sql :: state :: {state}")
         retries = state["repairs_left"]
         ### If retries are left or issues raised in prior run, rerun loop at generate sql func
         try:
@@ -77,7 +79,7 @@ class TrafficAgent:
 
     async def generate_sql(self, state: dict, runtime: Runtime[Context]) -> dict:
         """Create/Corrects SQL query for provided user question"""
-        print(f"\ntraffic_agent :: generate_sql :: state :: {state}")
+        self.log.write(f"\ntraffic_agent :: generate_sql :: state :: {state}")
         self.request_id = state["request_id"]
         question = state["question"]
 
@@ -91,7 +93,7 @@ class TrafficAgent:
 
         if "sql_query" in state and state["sql_query"] and (state["error"] or state["sql_issues"]):
             sql_faults = f'Errors:{state["error"]}\nIssues:{state["sql_issues"]}\n'
-            print(f"\ntraffic_agent :: generate_sql :: sql_faults :: {sql_faults}")
+            self.log.write(f"\ntraffic_agent :: generate_sql :: sql_faults :: {sql_faults}")
             do_repair = True
 
         if do_repair:
@@ -120,7 +122,7 @@ class TrafficAgent:
             )
 
         try:
-            # print(f"\ntraffic_agent :: generate_sql :: do_repair :: {do_repair} :: prompt :: {prompt}")
+            self.log.write(f"\ntraffic_agent :: generate_sql :: do_repair :: {do_repair} :: prompt :: {prompt}")
             print(f"\ntraffic_agent :: generate_sql :: do_repair :: {do_repair} :: prompt")
             query = await self.llm_manager.call(prompt=prompt, model=SQL_MODEL,
                                                 temperature=0.0)
@@ -142,7 +144,7 @@ class TrafficAgent:
 
     async def review(self, state: dict):
         """Review SQL against original question"""
-        print(f"\ntraffic_agent :: review :: state :: {state}")
+        self.log.write(f"\ntraffic_agent :: review :: state :: {state}")
         output_parser = JsonOutputParser()
         try:
             _review_prompt = review_prompt(state)
@@ -169,7 +171,7 @@ class TrafficAgent:
 
     async def summarize(self, state: dict) -> dict:
         """Provide summary for user question"""
-        print(f"\ntraffic_agent :: summarize :: state :: {state}")
+        self.log.write(f"\ntraffic_agent :: summarize :: state :: {state}")
         _error = ""
         if not state["summarize"]:
             return 
@@ -178,6 +180,7 @@ class TrafficAgent:
 
         try:
             summary_prompt = summarize_prompt(state)
+            self.log.write(f"\ntraffic_agent :: summarize :: summary_prompt :: {summary_prompt}")
             print(f"\ntraffic_agent :: summarize :: summary_prompt :: {bool(summary_prompt)}")
             if summary_prompt:
                 summary = await self.llm_manager.call(
@@ -205,7 +208,7 @@ class TrafficAgent:
 
 
     async def warmup(self, state: dict, runtime: Runtime[Context]) -> dict:
-        print(f"\ntraffic_agent :: warmup :: state :: {state}")
+        self.log.write(f"\ntraffic_agent :: warmup :: state :: {state}")
         print(f"\ntraffic_agent :: warmup :: UID :: {runtime.context.user_id}")
         intent = intent_tag(state["question"])
 

@@ -6,6 +6,7 @@ from langchain.messages import HumanMessage, SystemMessage, AIMessage, ToolMessa
 
 from managers.database.db import DatabaseManager
 from managers.models.llm import LLMManager
+from utils.logs import FileLogger
 from config.dip import DIP_HIGH_UTIL, DIP_MIN_DROP
 from config.traffic import TRAFFIC_TABLE_NAME
 from config.llm import SUMMARY_MODEL
@@ -16,6 +17,7 @@ class DipAgent:
     def __init__(self):
         self.db_manager = DatabaseManager()
         self.llm_manager = LLMManager()
+        self.log = FileLogger()
 
     def _get_dip_sql_query(self, window_hours, linktype_filter, util_filter,
                            min_drop, max_drop_filter, limit):
@@ -140,7 +142,7 @@ class DipAgent:
     async def summarize(self, state: dict) -> dict:
         """Provide additional summary"""
         
-        print(f"\ndip_agent :: summarize :: state :: {state}")
+        self.log.write(f"\ndip_agent :: summarize :: state :: {state}")
         if state["summarize"]:
             try:
                 summary_prompt = summarize_prompt(state)
@@ -181,7 +183,7 @@ class DipAgent:
         the question text; effective values used are returned in `params_used`
         so the caller/frontend can show exactly what filter was applied.
         Returns (sql, cols, rows, ms, params_used)."""
-        print(f"\ndip_agent :: dip_detect :: state :: {state}")
+        self.log.write(f"\ndip_agent :: dip_detect :: state :: {state}")
         self.request_id = state['request_id']
         self.question = state['question']
         self.qn_low = self.question.lower()

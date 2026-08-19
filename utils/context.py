@@ -1,8 +1,9 @@
+import random
 from typing import Union
 from dataclasses import dataclass
-from pydantic import BaseModel
 
 from config.mcp import MCP_DB_TYPE
+from config.scratchpad import USERS, SESSIONS, REQUESTS
 
 @dataclass
 class Context:
@@ -17,9 +18,9 @@ class QueryRequest:
         self.user_response = body.get("user_response", "").strip()
         self.mcp_server = body.get("db_type", MCP_DB_TYPE)
         self.summarize = not body.get("no_summary", False)
-        self.request_id = body.get("request_id", "")
-        self.session_id = body.get("session_id", "SESS3")
-        self.user_id = body.get("user_id", "USER3")
+        self.request_id = body.get("request_id", f"req_{random.choice(REQUESTS)}")
+        self.session_id = body.get("session_id", f"sess_{random.choice(SESSIONS)}")
+        self.user_id = body.get("user_id", f"user_{random.choice(USERS)}")
 
     def is_valid(self, body):
         return True if isinstance(body, dict) else False

@@ -11,14 +11,14 @@ class FileLogger:
     def __init__(self):
         self.log_file = LOG_FILE
         self.feedback_log_file = FEEDBACK_LOG_FILE
-        self.log_path = self.get_log_folder()
+        self.log_path = self._get_log_folder()
 
     @staticmethod
-    def get_log_folder() -> str:
+    def _get_log_folder() -> str:
         current_dir = os.path.dirname(os.path.abspath(__file__))
         return os.path.join(current_dir, '..', LOG_LOCATION)
         
-    async def write_to_log(self, content: Union[str, dict], feedback: bool = False):
+    async def write(self, content: Union[str, dict], feedback: bool = False):
         '''Writes to log file based on input params'''
         _file = self.feedback_log_file if feedback else self.log_file
         write_to_file = os.path.join(self.log_path, _file)
