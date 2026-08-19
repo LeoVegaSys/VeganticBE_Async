@@ -2,14 +2,10 @@ import json
 import orjson
 from aiohttp import web
 import aiohttp_cors
-from fastapi import FastAPI, Request, Response
-from fastapi.middleware.cors import CORSMiddleware
-from granian.server.embed import Server
 
 from config.server import SERVER_HOST
 from src.startpoint.graph import WorkflowManager
-from utils.context import QueryRequest, Ask, Feedback
-
+from utils.context import QueryRequest
 
 
 async def handle_query(request):
@@ -22,12 +18,17 @@ async def handle_query(request):
                 status=400  # Bad Request
             )
         res = await WorkflowManager().answer_query(request=obj)
-        payload = json.dumps(res, default=str)
+        payload = orjson.dumps(res, default=str)
         return web.json_response(payload)
     except json.JSONDecodeError:
         return web.json_response(
             {"error": "Invalid JSON"},
             status=400  # Bad Request
+        )
+    except orjson.JSONEncodeError:
+        return web.json_response(
+            {"error": "Unable to load into JSON"},
+            status=500  # Bad Request
         )
     except Exception as e:
         return web.json_response(
@@ -65,43 +66,9 @@ async def init_app():
     return app
 
 
-# async def init_fast_app():
-gf_app = FastAPI()
-
-@gf_app.post("/ask")
-async def user_query(request: Ask):
-    try:
-        if not request:
-            return Response(
-                content=orjson.dumps({"error": "Invalid request structure"}),
-                status_code=400  # Bad Request
-            )
-        res = await WorkflowManager().answer_query(request=request)
-        payload = orjson.dumps(res, default=str)
-        return Response(content=payload)
-    except Exception as e:
-        return Response(content=orjson.dumps({"error": str(e)}),
-                        status_code=500)
-
-@gf_app.post("/feedback")
-async def user_feedback(request: Feedback):
-    return Response(content=orjson.dumps({"received": request}))
-
-gf_app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=False,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-# return gf_app
-
-
 # 4. Run the server on a specific port
-async def serve(port):
+def serve(port):
 # if __name__ == '__main__':
     # web.run_app manages the asyncio event loop automatically
     # Set host='127.0.0.1' and port=8080 as requested
-    # web.run_app(init_app(), host=SERVER_HOST, port=port)
-    await Server(gf_app, address=SERVER_HOST, port=port, interface='asgi').serve()
+    web.run_app(init_app(), host=SERVER_HOST, port=port)
