@@ -1,24 +1,31 @@
 from langgraph.store.redis import RedisStore
-from langgraph.checkpoint.redis import RedisSaver
+from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
+from psycopg_pool import AsyncConnectionPool
+import asyncio
 
-from config import REDIS_HOST, REDIS_PORT
+from config.store import REDIS_HOST, REDIS_PORT, STORE_DB
+from config.checkpointer import *
 
 
-def main():
+async def main():
     """
     To be performed ONLY ONCE, to set up database schema migrations in REDIS
     RUN before first usage of checkpoint or store in langgraph
     """
-    redis_uri = f"redis://{REDIS_HOST}:{REDIS_PORT}"
-    with RedisStore.from_conn_string(redis_uri) as store:
+    redis_uri = f"{STORE_DB}://{REDIS_HOST}:{REDIS_PORT}"
+    pg_uri = f"{CHECKPOINTER_DB}://{PG_USER}:{PG_PWD}@{PG_HOST}:{PG_PORT}/{PG_DB_NAME}"
+    # with RedisStore.from_conn_string(redis_uri) as store:
         # store.setup()
         # Remember to check TTL config before uncommenting above setup function
+        # pass
+
+    async with AsyncConnectionPool(conninfo=pg_uri, max_size=4) as pool:
+        checkpointer = AsyncPostgresSaver(pool)
+        print(f"Starting setup :: {pg_uri}")
+        checkpointer.setup()
+        print(f"Setup done!!!")
         pass
-        
-        with RedisSaver.from_conn_string(redis_uri) as checkpointer:
-            # checkpointer.setup()
-            pass
 
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())

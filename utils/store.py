@@ -3,10 +3,10 @@ import asyncio
 
 from langgraph.store.redis.aio import AsyncRedisStore
 
-from config.redis import *
+from config.store import *
 from config.llm import OLLAMA_KEEP_ALIVE
 
-REDIS_STORE_URI = f"redis://{REDIS_HOST}:{REDIS_PORT}"
+REDIS_STORE_URI = f"{STORE_DB}://{REDIS_HOST}:{REDIS_PORT}"
 
 
 def get_ttl_config():

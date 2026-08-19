@@ -1,10 +1,11 @@
 from uuid import uuid4
 
+from langgraph.store.redis.aio import AsyncRedisStore
+from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
+from psycopg_pool import AsyncConnectionPool
 from langgraph.graph import END, START
 from langgraph.graph import StateGraph
-from langgraph.store.redis.aio import AsyncRedisStore
 from langgraph.runtime import Runtime
-from langgraph.checkpoint.memory import InMemorySaver
 from langgraph.types import interrupt, Command
 from langchain_core.runnables import RunnableConfig
 
@@ -14,7 +15,8 @@ from src.dip.graph import DipWorkflowManager
 from utils.store import manage_store, add_to_memories, get_ttl_config
 from utils.categorize import route_query
 from utils.context import Context, QueryRequest
-from config.redis import REDIS_HOST, REDIS_PORT
+from config.store import REDIS_HOST, REDIS_PORT, STORE_DB
+from config.checkpointer import *
 
 async def classify_query(state: dict, runtime: Runtime[Context]) -> str:
     print(f"\nget_query_type :: state :: {state}")
@@ -92,35 +94,35 @@ class WorkflowManager:
         """
         print(f"\nGraph :: answer_query :: req {request.__dict__}")
         
-        store_uri = f"redis://{REDIS_HOST}:{REDIS_PORT}"
-        checkpointer = InMemorySaver()
+        store_uri = f"{STORE_DB}://{REDIS_HOST}:{REDIS_PORT}"
+        pg_uri = f"{CHECKPOINTER_DB}://{PG_USER}:{PG_PWD}@{PG_HOST}:{PG_PORT}/{PG_DB_NAME}"
+
         async with AsyncRedisStore.from_conn_string(store_uri, ttl=get_ttl_config()) as store:
-        # checkpointer = RedisSaver.from_conn_string(store_uri)
+            async with AsyncConnectionPool(conninfo=pg_uri, max_size=20) as pool:
+                checkpointer = AsyncPostgresSaver(pool)
 
-            # app = self.create_workflow().compile(store=store)
-            app = self.create_workflow().compile(store=store, checkpointer=checkpointer)
-            # app = self.create_workflow().compile()
+                app = self.create_workflow().compile(store=store, checkpointer=checkpointer)
 
-            _uuid = request.request_id or uuid4().hex[:12]
-            config: RunnableConfig = {
-                "configurable": {"thread_id": request.session_id}
-                } if request.session_id else None
-            context = Context(user_id=request.user_id) if request.user_id else None
+                _uuid = request.request_id or uuid4().hex[:12]
+                config: RunnableConfig = {
+                    "configurable": {"thread_id": request.session_id}
+                    } if request.session_id else None
+                context = Context(user_id=request.user_id) if request.user_id else None
 
-            if request.user_response:
-                result = await app.ainvoke(
-                    Command(resume=request.user_response),
-                    config=config, context=context)
-            else:
-                result = await app.ainvoke(
-                    input={"question": request.question, "request_id": _uuid,
-                           "summarize": request.summarize,
-                           "mcp_server": request.mcp_server},
-                    config=config, context=context)
+                if request.user_response:
+                    result = await app.ainvoke(
+                        Command(resume=request.user_response),
+                        config=config, context=context)
+                else:
+                    result = await app.ainvoke(
+                        input={"question": request.question, "request_id": _uuid,
+                            "summarize": request.summarize,
+                            "mcp_server": request.mcp_server},
+                        config=config, context=context)
 
-            snapshot = app.get_state(config)
-            if snapshot.interrupts:
-                result["user_input_required"] = snapshot.interrupts[0].value
+                snapshot = app.get_state(config)
+                if snapshot.interrupts:
+                    result["user_input_required"] = snapshot.interrupts[0].value
 
-            print(f"\ngraph :: answer_query :: result :: {result}")
-            return result
+                print(f"\ngraph :: answer_query :: result :: {result}")
+                return result
