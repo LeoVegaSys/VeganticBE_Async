@@ -18,7 +18,7 @@ async def handle_query(request):
                 status=400  # Bad Request
             )
         res = await WorkflowManager().answer_query(request=obj)
-        payload = orjson.dumps(res, default=str)
+        payload = orjson.dumps(res).decode("utf-8")
         return web.json_response(payload)
     except json.JSONDecodeError:
         return web.json_response(

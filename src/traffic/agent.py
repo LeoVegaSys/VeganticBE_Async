@@ -1,4 +1,4 @@
-import json
+import orjson
 import asyncio
 
 from langgraph.types import Command
@@ -146,7 +146,7 @@ class TrafficAgent:
         output_parser = JsonOutputParser()
         try:
             _review_prompt = review_prompt(state)
-            result = await self.llm_manager_rest.call(
+            result = await self.llm_manager.call(
                 prompt=_review_prompt,
                 model=SQL_MODEL,
                 temperature=0.0
@@ -155,7 +155,7 @@ class TrafficAgent:
             return {
                 "messages": [
                     SystemMessage(content=review_prompt),
-                    AIMessage(content=json.dumps(comments))
+                    AIMessage(content=orjson.dumps(comments).decode('utf-8'))
                     ],
                 "review": comments 
                 }
@@ -190,7 +190,7 @@ class TrafficAgent:
             return {
                 "messages": [
                     SystemMessage(content=summary_prompt),
-                    AIMessage(content=json.dumps(summary))
+                    AIMessage(content=orjson.dumps(summary).decode('utf-8'))
                     ],
                 "summary": summary
                 }
@@ -246,7 +246,7 @@ class TrafficAgent:
                 uuid=state['request_id'], query=query)
             return {
                 "messages": ToolMessage(
-                    content=json.dumps(result["data"]),
+                    content=orjson.dumps(result["data"]).decode('utf-8'),
                     tool_call_id=result["tool_id"],
                     name=result["tool_name"],
                 ),

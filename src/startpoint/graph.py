@@ -1,5 +1,4 @@
 from uuid import uuid4
-import asyncio
 
 from langgraph.graph import END, START
 from langgraph.graph import StateGraph
@@ -14,7 +13,7 @@ from src.traffic.graph import TrafficWorkflowManager
 from src.dip.graph import DipWorkflowManager
 from utils.store import manage_store, add_to_memories, get_ttl_config
 from utils.categorize import route_query
-from utils.context import Context, QueryRequest, Ask
+from utils.context import Context, QueryRequest
 from config.redis import REDIS_HOST, REDIS_PORT
 
 async def classify_query(state: dict, runtime: Runtime[Context]) -> str:
@@ -87,8 +86,7 @@ class WorkflowManager:
     def returnGraph(self):
         return self.create_workflow().compile()
 
-    # async def answer_query(self, request: QueryRequest) -> dict:
-    async def answer_query(self, request: Ask) -> dict:
+    async def answer_query(self, request: QueryRequest) -> dict:
         """
         Run the agent workflow and return the formatted answer.
         """

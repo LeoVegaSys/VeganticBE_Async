@@ -1,5 +1,5 @@
 import re
-import json
+import orjson
 import asyncio
 
 from langchain.messages import HumanMessage, SystemMessage, AIMessage, ToolMessage
@@ -17,48 +17,50 @@ class DipAgent:
         self.db_manager = DatabaseManager()
         self.llm_manager = LLMManager()
 
-    def _get_dip_sql_query(self, window_hours, linktype_filter, util_filter, min_drop, limit):
-            return f'''WITH data_end AS (SELECT MAX("Time") AS t FROM {TRAFFIC_TABLE_NAME}),
-        windowed AS (
-            SELECT "Node Name", "Interface Name", "LinkType", "BW(Kb)", "Time",
-                "In Traffic (Kbps)", "Out Traffic (Kbps)"
-            FROM {TRAFFIC_TABLE_NAME}, data_end
-            WHERE "Time" >= data_end.t - INTERVAL '{window_hours} hours'
-            {linktype_filter}
-        ),
-        ranked AS (
-            SELECT *, ROW_NUMBER() OVER (
-                PARTITION BY "Node Name","Interface Name" ORDER BY "Time" DESC
-            ) AS rn
-            FROM windowed
-        ),
-        current AS (SELECT * FROM ranked WHERE rn = 1),
-        baseline AS (
-            SELECT "Node Name", "Interface Name",
-                AVG(GREATEST("In Traffic (Kbps)","Out Traffic (Kbps)")) AS baseline_val
-            FROM ranked WHERE rn > 1
-            GROUP BY "Node Name", "Interface Name"
-        )
-        SELECT
-            c."Node Name" AS "Node Name",
-            c."Interface Name" AS "Interface Name",
-            c."LinkType" AS "LinkType",
-            c."Time" AS "Latest Time",
-            ROUND(GREATEST(c."In Traffic (Kbps)", c."Out Traffic (Kbps)"), 2) AS "Current (Kbps)",
-            ROUND(b.baseline_val, 2) AS "Baseline (Kbps)",
-            ROUND((b.baseline_val - GREATEST(c."In Traffic (Kbps)", c."Out Traffic (Kbps)"))
-                / NULLIF(b.baseline_val, 0) * 100, 2) AS "Dip %",
-            ROUND(GREATEST(c."In Traffic (Kbps)", c."Out Traffic (Kbps)")
-                / NULLIF(c."BW(Kb)", 0) * 100, 2) AS "Current Utilization %"
-        FROM current c
-        JOIN baseline b
-        ON b."Node Name" = c."Node Name" AND b."Interface Name" = c."Interface Name"
-        WHERE b.baseline_val > 0
-        AND (b.baseline_val - GREATEST(c."In Traffic (Kbps)", c."Out Traffic (Kbps)"))
-            / NULLIF(b.baseline_val, 0) * 100 >= {min_drop}
-        {util_filter}
-        ORDER BY "Dip %" DESC
-        LIMIT {limit}'''
+    def _get_dip_sql_query(self, window_hours, linktype_filter, util_filter,
+                           min_drop, max_drop_filter, limit):
+        return f'''WITH data_end AS (SELECT MAX("Time") AS t FROM {TRAFFIC_TABLE_NAME}),
+            windowed AS (
+                SELECT NodeName, InterfaceName, LinkType, BWKb, "Time",
+                    InTrafficKbps, OutTrafficKbps
+                FROM {TRAFFIC_TABLE_NAME}, data_end
+                WHERE "Time" >= data_end.t - INTERVAL '{window_hours} hours'
+                {linktype_filter}
+            ),
+            ranked AS (
+                SELECT *, ROW_NUMBER() OVER (
+                    PARTITION BY NodeName, InterfaceName ORDER BY "Time" DESC
+                ) AS rn
+                FROM windowed
+            ),
+            current AS (SELECT * FROM ranked WHERE rn = 1),
+            baseline AS (
+                SELECT NodeName, InterfaceName,
+                    AVG(GREATEST(InTrafficKbps, OutTrafficKbps)) AS baseline_val
+                FROM ranked WHERE rn > 1
+                GROUP BY NodeName, InterfaceName
+            )
+            SELECT
+                c.NodeName AS "Node Name",
+                c.InterfaceName AS "Interface Name",
+                c.LinkType AS "LinkType",
+                c."Time" AS "Latest Time",
+                ROUND(GREATEST(c.InTrafficKbps, c.OutTrafficKbps), 2) AS "Current (Kbps)",
+                ROUND(b.baseline_val, 2) AS "Baseline (Kbps)",
+                ROUND((b.baseline_val - GREATEST(c.InTrafficKbps, c.OutTrafficKbps))
+                    / NULLIF(b.baseline_val, 0) * 100, 2) AS "Dip %",
+                ROUND(GREATEST(c.InTrafficKbps, c.OutTrafficKbps)
+                    / NULLIF(c.BWKb, 0) * 100, 2) AS "Current Utilization %"
+            FROM current c
+            JOIN baseline b
+            ON b.NodeName = c.NodeName AND b.InterfaceName = c.InterfaceName
+            WHERE b.baseline_val > 0
+            AND (b.baseline_val - GREATEST(c.InTrafficKbps, c.OutTrafficKbps))
+                / NULLIF(b.baseline_val, 0) * 100 >= {min_drop}
+            {max_drop_filter}
+            {util_filter}
+            ORDER BY "Dip %" DESC
+            LIMIT {limit}'''
 
     async def _get_link_types(self) -> list:
         """ Returns list of valid link types """
@@ -87,6 +89,37 @@ class DipAgent:
         m = re.search(rf'{keyword_pattern}\D{{0,15}}?(\d+(?:\.\d+)?)\s*%?', self.qn_low)
         return float(m.group(1)) if m else default
 
+    def _extract_dip_range(self):
+        """Parse the dip threshold as a (floor, ceiling) range:
+          'between 20 and 50%'  -> (20.0, 50.0)
+          'less than 50%'       -> (DIP_MIN_DROP, 50.0)   # below/under/at most/up to/no more than
+          'at least 30%'        -> (30.0, None)           # more than/above/over/>=
+          bare 'dip of 40%'     -> (40.0, None)
+        Order matters: check 'between' and ceiling phrasings BEFORE the permissive
+        floor branch, otherwise 'less than 50' would be read as a >= 50 floor."""
+        ql = self.qn_low
+        trig = r'(?:dip|drop|fell|fall)\w*'
+        m = re.search(
+            rf'{trig}\D{{0,15}}?between\s*(\d+(?:\.\d+)?)\s*%?\s*(?:and|to|-)\s*(\d+(?:\.\d+)?)',
+            ql
+        )
+        if m:
+            lo, hi = float(m.group(1)), float(m.group(2))
+            return (min(lo, hi), max(lo, hi))
+        m = re.search(
+            rf'{trig}\D{{0,20}}?(?:less than|below|under|at most|up to|no more than|<=|<)\s*(\d+(?:\.\d+)?)',
+            ql
+        )
+        if m:
+            return (float(DIP_MIN_DROP), float(m.group(1)))
+        m = re.search(
+            rf'{trig}\D{{0,20}}?(?:at least|more than|above|over|greater than|>=|>)?\s*(\d+(?:\.\d+)?)',
+            ql
+        )
+        if m:
+            return (float(m.group(1)), None)
+        return (float(DIP_MIN_DROP), None)
+    
     def _extract_window_hours(self, default=1):
         """Pull a time window out of the question. Defaults to last 1 hour of
         the interface's OWN history (per handoff doc Section 3 default),
@@ -149,7 +182,7 @@ class DipAgent:
         so the caller/frontend can show exactly what filter was applied.
         Returns (sql, cols, rows, ms, params_used)."""
         print(f"\ndip_agent :: dip_detect :: state :: {state}")
-        self.request_id = state['uuid']
+        self.request_id = state['request_id']
         self.question = state['question']
         self.qn_low = self.question.lower()
 
@@ -159,10 +192,7 @@ class DipAgent:
         window_hours = self._extract_window_hours()
 
         want_high_util = any(w in self.qn_low for w in ("util", "congest", "high", "capacity"))
-        min_drop = self._extract_pct(
-            keyword_pattern=r'(?:dip|drop|fell|fall)(?:ped)?\s*(?:of|by)?\s*(?:at least|>=)?', 
-            default=DIP_MIN_DROP
-        )
+        min_drop, max_drop = self._extract_dip_range()
         high_util = self._extract_pct(
             keyword_pattern=r'(?:util(?:ization)?|congest\w*)\s*(?:of|is|at least|above|>=)?', 
             default=DIP_HIGH_UTIL
@@ -170,12 +200,19 @@ class DipAgent:
 
         linktype = await linktype_coro
         linktype_filter = f'AND "LinkType" = {linktype}' if linktype else ""
-        util_filter = f'AND GREATEST(c."In Traffic (Kbps)", c."Out Traffic (Kbps)") \
-                     NULLIF(c."BW(Kb)", 0) * 100 >= {high_util}' if want_high_util else ""
+        util_filter = (
+            f'AND GREATEST(c.InTrafficKbps, c.OutTrafficKbps) '
+            f'/ NULLIF(c.BWKb, 0) * 100 >= {high_util}'
+        ) if want_high_util else ""
+        max_drop_filter = (
+            f'AND (b.baseline_val - GREATEST(c.InTrafficKbps, c.OutTrafficKbps)) '
+            f'/ NULLIF(b.baseline_val, 0) * 100 <= {max_drop}'
+        ) if max_drop is not None else ""
 
         # Window is measured from the DATASET's own latest sample, not wall-clock
         # now() -- this dataset is historical/fixed, not a live stream.
-        sql = self._get_dip_sql_query(window_hours, linktype_filter, util_filter, min_drop, limit)
+        sql = self._get_dip_sql_query(window_hours, linktype_filter, util_filter,
+                                        min_drop, max_drop_filter, limit)
         try:
             result = await self.db_manager._execute_query(uuid=self.request_id, query=sql)
         except Exception as e:
@@ -184,15 +221,16 @@ class DipAgent:
         summary = ""
         if not result["rows"]:
             extra = f" and current utilization >= {high_util:.0f}%" if high_util else ""
+            ceiling = f" and at most {max_drop:.0f}%" if max_drop is not None else ""
             summary = (
-                f"No interfaces found with a dip of at least {min_drop:.0f}% vs their baseline \
+                f"No interfaces found with a dip of at least {min_drop:.0f}%{ceiling} vs their baseline \
                 last {window_hours}h, linktype={linktype or 'ALL'}{extra}.")
             
         return {
             "messages": [
                 HumanMessage(content=state["question"]),
                 ToolMessage(
-                    content=json.dumps(result["data"]),
+                    content=orjson.dumps(result["data"]).decode('utf-8'),
                     tool_call_id=result["tool_id"],
                     name=result["tool_name"],
                 ),
