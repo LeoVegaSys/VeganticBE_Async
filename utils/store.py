@@ -116,17 +116,13 @@ async def read_from_store(user_id: str, category: str, params: list[str] = []) -
         return []
 
 
-async def get_conversation_history(user_id: str, params: list[str]) -> str:
+async def get_conversation_history(user_id: str, params: list[str]) -> list[dict]:
     """
-    Returns key-value pairs in flattened string, stored as part of previous conversations 
+    Returns previous user conversations 
     """
-    history = ""
     # if not warmup_done(user_id):
     memories = await read_from_store(user_id=user_id, category=HISTORY, params=params)
-    if memories:
-        history = "\n".join([f"{k.upper()}:{v}" for m in memories for k,v in m.value.items()])
-    print(f"GCM :: store :: {HISTORY}, {user_id} :: MemLen :: {len(memories)}")
-    return history
+    return memories
 
 
 async def warmup_done(user_id: str):

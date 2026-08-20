@@ -21,11 +21,14 @@ from utils.context import Context
 from utils.clean import clean_sql
 from utils.categorize import intent_tag
 from utils.store import warmup_done, get_conversation_history
-from utils.prompts import (summarize_prompt, fallback_summarize, review_prompt,
-sql_repair_prompt, conversation_prompt, sql_generate_prompt)
+# from utils.prompts import (summarize_prompt, fallback_summarize, review_prompt,
+# sql_repair_prompt, conversation_prompt, sql_generate_prompt)
+from utils.prompts2 import (summarize_prompt, fallback_summarize, review_prompt,
+sql_repair_prompt, conversation_prompt, sql_generate_prompt, memories_to_chat_msgs)
 from config.traffic import TRAFFIC_TABLE_NAME, QA_MAX_REPAIRS, CHART_INTENT_ALIASES
 from config.mcp import MCP_DB_TYPE
 from config.llm import SQL_MODEL, SUMMARY_MODEL
+
 
 m_cfg = MutableCacheConfiguration.initialized_with(
     DefaultInMemoryCacheConfiguration()).set_method_timeout(
@@ -118,29 +121,26 @@ class TrafficAgent:
             do_repair = True
 
         if do_repair:
-            prompt = sql_repair_prompt(
-                db_type=MCP_DB_TYPE, business_facts=business_facts,
-                schema=schema, question=question,
-                bad_sql=state["sql_query"], err=sql_faults
-            )
+            prompt = sql_repair_prompt().invoke({
+                "db_type": MCP_DB_TYPE, "business_facts": business_facts,
+                "schema": schema, "question": question,
+                "bad_sql": state["sql_query"], "err": sql_faults
+            })
         else:
             get_lts_coro = asyncio.create_task(self._get_link_types())
             get_when_coro = asyncio.create_task(self._get_max_min_time())
-            get_conv_hist_coro = asyncio.create_task(get_conversation_history(
+            get_memories_coro = asyncio.create_task(get_conversation_history(
                 user_id=runtime.context.user_id, params=["question", "answer"]))
-
-            memory = await get_conv_hist_coro
-            history = conversation_prompt(prev_conv=memory) if memory else None
-
+            memories = await get_memories_coro
             lts = await get_lts_coro
             when = await get_when_coro
-            prompt = sql_generate_prompt(
-                db_type=MCP_DB_TYPE, business_facts=business_facts,
-                table_name=TRAFFIC_TABLE_NAME, schema=schema,
-                lts=lts, when=when, question=question,
-                prev_convo=history
-            )
 
+            prompt = sql_generate_prompt().invoke({
+                "db_type": MCP_DB_TYPE, "business_facts": business_facts,
+                "table_name": TRAFFIC_TABLE_NAME, "schema": schema,
+                "lts": lts, "when": when, "question": question,
+                "conversation_history": memories_to_chat_msgs(memories)
+            })
         try:
             self.log.debug(f"\ntraffic_agent :: generate_sql :: do_repair :: {do_repair} :: prompt :: {prompt}")
             print(f"\ntraffic_agent :: generate_sql :: do_repair :: {do_repair} :: prompt")
@@ -170,7 +170,13 @@ class TrafficAgent:
         self.log.debug(f"\ntraffic_agent :: review :: state :: {state}")
         output_parser = JsonOutputParser()
         try:
-            _review_prompt = review_prompt(state)
+            _review_prompt = review_prompt().invoke({
+                "preview": orjson.dumps(state["results"][:40]).decode('utf-8')
+                  if "results" in state else "",
+                "question": state["question"],
+                "query": state["sql_query"],
+                "cols": state["columns"]
+            })
             result = await self.llm_manager.call(
                 prompt=_review_prompt,
                 model=SQL_MODEL,
@@ -179,7 +185,7 @@ class TrafficAgent:
             comments = output_parser.parse(result)
             return {
                 # "messages": [
-                #     SystemMessage(content=review_prompt),
+                #     SystemMessage(content=_review_prompt),
                 #     AIMessage(content=orjson.dumps(comments).decode('utf-8'))
                 #     ],
                 "review": comments 
@@ -200,10 +206,16 @@ class TrafficAgent:
         if not state["summarize"]:
             return 
         if state["sql_query"] == "NOT_RELEVANT":
-            return {"summary": f'Sorry, Please provide additional information. Original question : {state["question"]}'}
+            return {"summary": f'Sorry, Please provide additional information.\
+                     Original question : {state["question"]}'}
 
         try:
-            summary_prompt = summarize_prompt(state)
+            summary_prompt = summarize_prompt().invoke({
+                "question": state["question"],
+                "cols": state["columns"] if "columns" in state else "",
+                "preview" : orjson.dumps(state["results"][:40]).decode('utf-8')
+                  if "results" in state else ""
+            })
             self.log.debug(f"\ntraffic_agent :: summarize :: summary_prompt :: {summary_prompt}")
             print(f"\ntraffic_agent :: summarize :: summary_prompt :: {bool(summary_prompt)}")
             if summary_prompt:
