@@ -7,7 +7,7 @@ from langgraph.graph import add_messages
 
 
 class DipState(TypedDict):
-    request_id: str
+    # request_id: str
     messages : Annotated[list[AnyMessage], add_messages]
     question: str
     mcp_server: str
@@ -24,7 +24,7 @@ class DipState(TypedDict):
     error: str
 
 class DipOutputState(TypedDict):
-    request_id: str
+    # request_id: str
     # messages : Annotated[list[AnyMessage], add_messages]
     parsed_question: Dict[str, Any]
     unique_nouns: List[str]

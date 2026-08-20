@@ -22,10 +22,13 @@ from config.llm import SQL_MODEL, SUMMARY_MODEL
 
 
 class TrafficAgent:
-    def __init__(self):
+    def __init__(self, rid: str, sid: str, uid: str):
         self.db_manager = DatabaseManager()
         self.llm_manager = LLMManager()
         self.log = FileLogger().get_logger()
+        self.request_id = rid
+        self.session_id = sid
+        self.user_id = uid
 
 
     def repair_sql(self, state: dict) -> dict:
@@ -80,7 +83,6 @@ class TrafficAgent:
     async def generate_sql(self, state: dict, runtime: Runtime[Context]) -> dict:
         """Create/Corrects SQL query for provided user question"""
         self.log.debug(f"\ntraffic_agent :: generate_sql :: state :: {state}")
-        self.request_id = state["request_id"]
         question = state["question"]
 
         get_schema_coro = asyncio.create_task(self._get_schema())
@@ -245,7 +247,7 @@ class TrafficAgent:
         
         try:
             result = await self.db_manager._execute_query(
-                uuid=state['request_id'], query=query)
+                uuid=self.request_id, query=query)
             return {
                 "messages": ToolMessage(
                     content=orjson.dumps(result["data"]).decode('utf-8'),

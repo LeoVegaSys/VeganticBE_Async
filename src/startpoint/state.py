@@ -7,6 +7,8 @@ from langgraph.graph import add_messages
 
 class InputState(TypedDict):
     request_id: str
+    session_id: str
+    user_id: str
     messages : Annotated[list[AnyMessage], add_messages]
     question: str
     mcp_server: str
@@ -29,6 +31,8 @@ class InputState(TypedDict):
 
 class OutputState(TypedDict):
     request_id: str
+    session_id: str
+    user_id: str
     # messages : Annotated[list[AnyMessage], add_messages]
     question: str
     mcp_server: str

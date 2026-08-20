@@ -6,7 +6,7 @@ from langchain_core.messages import AnyMessage
 from langgraph.graph import add_messages
 
 class TrafficState(TypedDict):
-    request_id: str
+    # request_id: str
     messages : Annotated[list[AnyMessage], add_messages]
     question: str
     mcp_server: str
@@ -28,7 +28,7 @@ class TrafficState(TypedDict):
     review: str
 
 class TrafficOutputState(TypedDict):
-    request_id: str
+    # request_id: str
     # messages : Annotated[list[AnyMessage], add_messages]
     question: str
     mcp_server: str

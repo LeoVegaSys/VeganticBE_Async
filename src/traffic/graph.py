@@ -5,8 +5,8 @@ from src.traffic.agent import TrafficAgent
 
 
 class TrafficWorkflowManager:
-    def __init__(self):
-        self.agent=TrafficAgent()
+    def __init__(self, rid: str, sid: str, uid: str):
+        self.agent=TrafficAgent(rid, sid, uid)
 
     def create_workflow(self) -> StateGraph:
         """Create and configure the workflow graph."""
@@ -36,14 +36,14 @@ class TrafficWorkflowManager:
         return self.create_workflow().compile(checkpointer=True)
 
     async def run_traffic_agent(self, question: str, mcp_server: str,
-                                summarize: bool, request_id: str) -> dict:
+                                summarize: bool) -> dict:
         print(f"\nTrafficGraph :: run_traffic_agent :: Q {question} :: \
-              DT {mcp_server} :: SMR {summarize} :: ID {request_id}")
+              DT {mcp_server} :: SMR {summarize}")
         app = self.create_workflow().compile(checkpointer=True)
         # app = self.create_workflow().compile()
         result = await app.ainvoke(
             {"question": question, "summarize": summarize,
-             "request_id": request_id, "mcp_server":mcp_server}
+             "mcp_server":mcp_server}
         )
         print(f"\nrun_traffic_agent :: result :: {result}")
         return result

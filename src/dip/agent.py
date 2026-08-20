@@ -14,10 +14,13 @@ from utils.prompts import summarize_prompt, fallback_summarize
 
 
 class DipAgent:
-    def __init__(self):
+    def __init__(self, rid: str, sid: str, uid: str):
         self.db_manager = DatabaseManager()
         self.llm_manager = LLMManager()
         self.log = FileLogger().get_logger()
+        self.request_id = rid
+        self.session_id = sid
+        self.user_id = uid
 
     def _get_dip_sql_query(self, window_hours, linktype_filter, util_filter,
                            min_drop, max_drop_filter, limit):
@@ -184,7 +187,6 @@ class DipAgent:
         so the caller/frontend can show exactly what filter was applied.
         Returns (sql, cols, rows, ms, params_used)."""
         self.log.debug(f"\ndip_agent :: dip_detect :: state :: {state}")
-        self.request_id = state['request_id']
         self.question = state['question']
         self.qn_low = self.question.lower()
 

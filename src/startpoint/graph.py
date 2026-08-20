@@ -31,15 +31,17 @@ async def classify_query(state: dict, runtime: Runtime[Context]) -> str:
 
 async def call_traffic_graph(state: InputState, runtime: Runtime[Context]):
     print(f"\ncall_traffic_graph :: state :: {state}")
-    result = await TrafficWorkflowManager().run_traffic_agent(
-        question=state["question"], summarize=state["summarize"], 
-        request_id=state["request_id"], mcp_server=state["mcp_server"])
+    result = await TrafficWorkflowManager(
+        rid=state["request_id"], sid=state["session_id"], uid=state["user_id"]
+    ).run_traffic_agent(
+        question=state["question"], summarize=state["summarize"],
+        mcp_server=state["mcp_server"])
     
     # Write question to store
     await add_to_memories(user_id=runtime.context.user_id,
                           param_key="question",
                           data=state["question"])
-    # Write result to store
+    # Write result (from fields_to_copy in data) to store
     await add_to_memories(user_id=runtime.context.user_id, param_key="answer",
                           data=result,
                           fields_to_copy=["sql_query", "summary", "error"])
@@ -50,15 +52,17 @@ async def call_traffic_graph(state: InputState, runtime: Runtime[Context]):
 
 async def call_dip_graph(state: InputState, runtime: Runtime[Context]):
     print(f"\ncall_dip_graph :: state :: {state}")
-    result = await DipWorkflowManager().run_dip_agent(
-            question=state["question"], summarize=state["summarize"], 
-            request_id=state["request_id"], mcp_server=state["mcp_server"])
+    result = await DipWorkflowManager(
+        rid=state["request_id"], sid=state["session_id"], uid=state["user_id"]
+    ).run_dip_agent(
+        question=state["question"], summarize=state["summarize"],
+        mcp_server=state["mcp_server"])
         
     # Write question to store
     await add_to_memories(user_id=runtime.context.user_id,
                             param_key="question",
                             data=state["question"])
-    # Write result to store
+    # Write result (from fields_to_copy in data) to store
     await add_to_memories(user_id=runtime.context.user_id, param_key="answer",
                             data=result,
                             fields_to_copy=["sql_query", "summary", "error"])
@@ -88,11 +92,11 @@ class WorkflowManager:
     def returnGraph(self):
         return self.create_workflow().compile()
 
-    async def answer_query(self, request: QueryRequest) -> dict:
+    async def answer_query(self, rq: QueryRequest) -> dict:
         """
         Run the agent workflow and return the formatted answer.
         """
-        print(f"\nGraph :: answer_query :: req {request.__dict__}")
+        print(f"\nGraph :: answer_query :: req {rq.__dict__}")
 
         store_uri = f"{STORE_DB}://{REDIS_HOST}:{REDIS_PORT}"
         pg_uri = f"{CHECKPOINTER_DB}://{PG_USER}:{PG_PWD}@{PG_HOST}:{PG_PORT}/{PG_DB_NAME}"
@@ -105,21 +109,22 @@ class WorkflowManager:
 
                 app = self.create_workflow().compile(store=store, checkpointer=checkpointer)
 
-                _uuid = request.request_id or uuid4().hex[:12]
+                _uuid = rq.request_id or uuid4().hex[:12]
                 config: RunnableConfig = {
-                    "configurable": {"thread_id": request.session_id}
-                    } if request.session_id else None
-                context = Context(user_id=request.user_id) if request.user_id else None
+                    "configurable": {"thread_id": rq.session_id}
+                    } if rq.session_id else None
+                context = Context(user_id=rq.user_id) if rq.user_id else None
 
-                if request.user_response:
+                if rq.user_response:
                     result = await app.ainvoke(
-                        Command(resume=request.user_response),
+                        Command(resume=rq.user_response),
                         config=config, context=context)
                 else:
                     result = await app.ainvoke(
-                        input={"question": request.question, "request_id": _uuid,
-                            "summarize": request.summarize,
-                            "mcp_server": request.mcp_server},
+                        input={"question": rq.question, "request_id": _uuid,
+                            "session_id": rq.session_id, "user_id": rq.user_id,
+                            "summarize": rq.summarize,
+                            "mcp_server": rq.mcp_server},
                         config=config, context=context)
 
                 snapshot = await app.aget_state(config)
