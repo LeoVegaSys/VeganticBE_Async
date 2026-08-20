@@ -2190,6 +2190,15 @@ memory = [
 ]
 
 [[package]]
+name = "py-memoize"
+version = "3.1.1"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/f4/7e/443433b6be2e4c44d5fbfbf393f95218d6f3bc3e514214092a7e94f22160/py-memoize-3.1.1.tar.gz", hash = "sha256:e06627a68917b14e5af878e491ea154e3580db0494b449d2d1144f135d38d569", size = 24403, upload-time = "2024-10-07T08:51:45.303Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/6d/55/b903566d223cfaf94db622087dec1c529b7d2e2abc44e34e39944c4bd465/py_memoize-3.1.1-py3-none-any.whl", hash = "sha256:8ccfa67e70ef14b5df56ce3fa309b649810fd28dd5cf58feb95a5099d246f338", size = 22808, upload-time = "2024-10-07T08:51:43.601Z" },
+]
+
+[[package]]
 name = "pyasn1"
 version = "0.6.4"
 source = { registry = "https://pypi.org/simple" }
@@ -2789,6 +2798,7 @@ dependencies = [
     { name = "mcp-server-motherduck" },
     { name = "podman" },
     { name = "psycopg", extra = ["binary"] },
+    { name = "py-memoize" },
     { name = "python-dotenv" },
 ]
 
@@ -2810,6 +2820,7 @@ requires-dist = [
     { name = "mcp-server-motherduck", specifier = ">=1.0.7" },
     { name = "podman", specifier = ">=5.8.0" },
     { name = "psycopg", extras = ["binary"], specifier = ">=3.3.4" },
+    { name = "py-memoize", specifier = ">=3.1.1" },
     { name = "python-dotenv", specifier = ">=1.2.2" },
 ]
 

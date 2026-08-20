@@ -1,6 +1,12 @@
 import orjson
 import asyncio
-from functools import lru_cache
+from datetime import timedelta
+
+from memoize.configuration import MutableCacheConfiguration, DefaultInMemoryCacheConfiguration
+from memoize.storage import LocalInMemoryCacheStorage
+from memoize.wrapper import memoize
+from memoize.key import EncodedMethodNameAndArgsKeyExtractor
+from memoize.eviction import LeastRecentlyUpdatedEvictionStrategy
 
 from langgraph.types import Command
 from langgraph.runtime import Runtime
@@ -20,6 +26,15 @@ sql_repair_prompt, conversation_prompt, sql_generate_prompt)
 from config.traffic import TRAFFIC_TABLE_NAME, QA_MAX_REPAIRS, CHART_INTENT_ALIASES
 from config.mcp import MCP_DB_TYPE
 from config.llm import SQL_MODEL, SUMMARY_MODEL
+
+m_cfg = MutableCacheConfiguration.initialized_with(
+    DefaultInMemoryCacheConfiguration()).set_method_timeout(
+        timedelta(minutes=5)).set_eviction_strategy(
+            LeastRecentlyUpdatedEvictionStrategy(
+                capacity=20)).set_key_extractor(
+                    EncodedMethodNameAndArgsKeyExtractor(
+                        skip_first_arg_as_self=True)).set_storage(
+                            LocalInMemoryCacheStorage())
 
 
 class TrafficAgent:
@@ -52,7 +67,7 @@ class TrafficAgent:
             update={"repairs_left": 0}
         )
     
-    @lru_cache(maxsize=5)
+    @memoize(configuration=m_cfg)
     async def _get_schema(self) -> str:
         """ 
         Returns comma-separated string of concatenated column names and their datatypes 
@@ -61,17 +76,17 @@ class TrafficAgent:
         WHERE table_name = '{TRAFFIC_TABLE_NAME}' ORDER BY ordinal_position"
         result = await self.db_manager._execute_query(uuid=self.request_id, query=query)
         return ", ".join(f'"{c}" {t}' for c, t in result["rows"])
-    
 
-    @lru_cache(maxsize=5)
+
+    @memoize(configuration=m_cfg)
     async def _get_link_types(self) -> list:
         """ Returns list of valid link types """
         query = f'SELECT DISTINCT "LinkType" FROM {TRAFFIC_TABLE_NAME}'
         result = await self.db_manager._execute_query(uuid=self.request_id, query=query)
         return [r[0] for r in result["rows"] if r[0]]
-    
-    
-    @lru_cache(maxsize=5)
+
+
+    @memoize(configuration=m_cfg)
     async def _get_max_min_time(self) -> str:
         """ Returns max and min time if available else n/a """
         query = f'SELECT MIN("Time"), MAX("Time") FROM {TRAFFIC_TABLE_NAME}'
@@ -81,9 +96,9 @@ class TrafficAgent:
             return f"{min} -> {max}"
         except Exception as e:
             return "n/a"
-        
 
-    @lru_cache(maxsize=5, typed=True)
+
+    @memoize(configuration=m_cfg)
     async def generate_sql(self, state: dict, runtime: Runtime[Context]) -> dict:
         """Create/Corrects SQL query for provided user question"""
         self.log.debug(f"\ntraffic_agent :: generate_sql :: state :: {state}")
@@ -175,9 +190,9 @@ class TrafficAgent:
             return {
                 "error": _error
             }
-            
 
-    @lru_cache(maxsize=5, typed=True)
+
+    @memoize(configuration=m_cfg)
     async def summarize(self, state: dict) -> dict:
         """Provide summary for user question"""
         self.log.debug(f"\ntraffic_agent :: summarize :: state :: {state}")
