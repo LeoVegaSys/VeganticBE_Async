@@ -7,7 +7,7 @@ from langgraph.graph import add_messages
 
 class TrafficState(TypedDict):
     # request_id: str
-    messages : Annotated[list[AnyMessage], add_messages]
+    # messages : Annotated[list[AnyMessage], add_messages]
     question: str
     mcp_server: str
     sql_query: str
@@ -17,7 +17,7 @@ class TrafficState(TypedDict):
     row_count: int
     columns: List[str]
     results: List[Any]
-    summary: Annotated[str, operator.add]
+    summary: str
     visualization: Annotated[str, operator.add]
     visualization_reason: Annotated[str, operator.add]
     formatted_data_for_visualization: Dict[str, Any]
@@ -39,7 +39,7 @@ class TrafficOutputState(TypedDict):
     row_count: int
     columns: List[str]
     results: List[Any]
-    summary: Annotated[str, operator.add]
+    summary: str
     visualization: Annotated[str, operator.add]
     visualization_reason: Annotated[str, operator.add]
     formatted_data_for_visualization: Dict[str, Any]

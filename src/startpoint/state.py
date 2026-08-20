@@ -9,7 +9,7 @@ class InputState(TypedDict):
     request_id: str
     session_id: str
     user_id: str
-    messages : Annotated[list[AnyMessage], add_messages]
+    # messages : Annotated[list[AnyMessage], add_messages]
     question: str
     mcp_server: str
     sql_query: str
@@ -19,7 +19,7 @@ class InputState(TypedDict):
     row_count: int
     columns: List[str]
     results: List[Any]
-    summary: Annotated[str, operator.add]
+    summary: str
     visualization: Annotated[str, operator.add]
     visualization_reason: Annotated[str, operator.add]
     formatted_data_for_visualization: Dict[str, Any]
@@ -43,7 +43,7 @@ class OutputState(TypedDict):
     row_count: int
     columns: List[str]
     results: List[Any]
-    summary: Annotated[str, operator.add]
+    summary: str
     visualization: Annotated[str, operator.add]
     visualization_reason: Annotated[str, operator.add]
     formatted_data_for_visualization: Dict[str, Any]

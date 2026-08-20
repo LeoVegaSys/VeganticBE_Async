@@ -135,12 +135,15 @@ class TrafficAgent:
             sql_response = clean_sql(query)
             msgs = [SystemMessage(content=prompt), AIMessage(sql_response)]
             if sql_response.strip() == "NOT_ENOUGH_INFO":
-                return {"messages": msgs, "sql_query": "NOT_RELEVANT"}
+                # return {"messages": msgs, "sql_query": "NOT_RELEVANT"}
+                return {"sql_query": "NOT_RELEVANT"}
             else:
-                return {"messages": msgs, "sql_query": sql_response, "sql_valid": True, "sql_issues": "", "error": ""}
+                # return {"messages": msgs, "sql_query": sql_response, "sql_valid": True, "sql_issues": "", "error": ""}
+                return {"sql_query": sql_response, "sql_valid": True, "sql_issues": "", "error": ""}
         except Exception as e:
             _error = str(e)
-            return {"messages": msgs , "sql_query": "", "sql_valid": False, "sql_issues": "", "error": _error}
+            # return {"messages": msgs , "sql_query": "", "sql_valid": False, "sql_issues": "", "error": _error}
+            return {"sql_query": "", "sql_valid": False, "sql_issues": "", "error": _error}
 
 
     async def review(self, state: dict):
@@ -156,10 +159,10 @@ class TrafficAgent:
             )
             comments = output_parser.parse(result)
             return {
-                "messages": [
-                    SystemMessage(content=review_prompt),
-                    AIMessage(content=orjson.dumps(comments).decode('utf-8'))
-                    ],
+                # "messages": [
+                #     SystemMessage(content=review_prompt),
+                #     AIMessage(content=orjson.dumps(comments).decode('utf-8'))
+                #     ],
                 "review": comments 
                 }
         except Exception as e:
@@ -192,17 +195,17 @@ class TrafficAgent:
             else:
                 summary = fallback_summarize(state)
             return {
-                "messages": [
-                    SystemMessage(content=summary_prompt),
-                    AIMessage(content=orjson.dumps(summary).decode('utf-8'))
-                    ],
+                # "messages": [
+                #     SystemMessage(content=summary_prompt),
+                #     AIMessage(content=orjson.dumps(summary).decode('utf-8'))
+                #     ],
                 "summary": summary
                 }
         except Exception as e:
             summary = fallback_summarize(state)
             _error = f"LLM summary unavailable. Issue encountered : {e}"
             return {
-                "messages": AIMessage(content=summary),
+                # "messages": AIMessage(content=summary),
                 "summary": summary, 
                 "error": _error
             }
@@ -219,12 +222,12 @@ class TrafficAgent:
         #     prompt = get_conversation_prompt(prev_conv=memory) if memory else None
             # self.llm_manager_rest.call(warmup=True, prompt=prompt)
         
-        warmed_up = await warmup_done(user_id=runtime.context.user_id)
-        if not warmed_up:
-            await self.llm_manager.call(warmup=True)
+        # warmed_up = await warmup_done(user_id=runtime.context.user_id)
+        # if not warmed_up:
+        #     await self.llm_manager.call(warmup=True)
 
         return {
-            "messages" : HumanMessage(content=state["question"]),
+            # "messages" : HumanMessage(content=state["question"]),
             "repairs_left": QA_MAX_REPAIRS, 
             "intent": intent,
             "chart_intent" : CHART_INTENT_ALIASES.get(intent, intent)
@@ -249,11 +252,11 @@ class TrafficAgent:
             result = await self.db_manager._execute_query(
                 uuid=self.request_id, query=query)
             return {
-                "messages": ToolMessage(
-                    content=orjson.dumps(result["data"]).decode('utf-8'),
-                    tool_call_id=result["tool_id"],
-                    name=result["tool_name"],
-                ),
+                # "messages": ToolMessage(
+                #     content=orjson.dumps(result["data"]).decode('utf-8'),
+                #     tool_call_id=result["tool_id"],
+                #     name=result["tool_name"],
+                # ),
                 "sql_valid": True, 
                 "results": result["data"],
                 "row_count": result["rowCount"],

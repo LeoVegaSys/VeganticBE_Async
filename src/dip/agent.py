@@ -158,17 +158,17 @@ class DipAgent:
                 else:
                     summary = fallback_summarize(state)
                 return {
-                    "messages": [
-                        SystemMessage(content=summary_prompt),
-                        AIMessage(content=summary)
-                    ],
+                    # "messages": [
+                    #     SystemMessage(content=summary_prompt),
+                    #     AIMessage(content=summary)
+                    # ],
                     "summary": summary
                     }
             except Exception as e:
                 summary = fallback_summarize(state)
                 _error = f"LLM summary unavailable. Issue encountered : {e}"
             return {
-                "messages": AIMessage(content=summary),
+                # "messages": AIMessage(content=summary),
                 "summary": summary,
                 "error": _error
                 }
@@ -231,15 +231,15 @@ class DipAgent:
                 last {window_hours}h, linktype={linktype or 'ALL'}{extra}.")
             
         return {
-            "messages": [
-                HumanMessage(content=state["question"]),
-                ToolMessage(
-                    content=orjson.dumps(result["data"]).decode('utf-8'),
-                    tool_call_id=result["tool_id"],
-                    name=result["tool_name"],
-                ),
-                AIMessage(content=summary)
-            ],
+            # "messages": [
+            #     HumanMessage(content=state["question"]),
+            #     ToolMessage(
+            #         content=orjson.dumps(result["data"]).decode('utf-8'),
+            #         tool_call_id=result["tool_id"],
+            #         name=result["tool_name"],
+            #     ),
+            #     AIMessage(content=summary)
+            # ],
             "sql_query": sql, 
             "sql_valid": True, 
             "summary" : summary,

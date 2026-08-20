@@ -17,7 +17,7 @@ async def handle_query(request):
                 {"error": "Invalid request structure"},
                 status=400  # Bad Request
             )
-        res = await WorkflowManager().answer_query(request=obj)
+        res = await WorkflowManager().answer_query(obj)
         payload = orjson.dumps(res).decode("utf-8")
         return web.json_response(payload)
     except json.JSONDecodeError:

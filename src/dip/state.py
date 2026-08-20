@@ -8,7 +8,7 @@ from langgraph.graph import add_messages
 
 class DipState(TypedDict):
     # request_id: str
-    messages : Annotated[list[AnyMessage], add_messages]
+    # messages : Annotated[list[AnyMessage], add_messages]
     question: str
     mcp_server: str
     parsed_question: Dict[str, Any]
@@ -32,7 +32,7 @@ class DipOutputState(TypedDict):
     sql_valid: bool
     sql_issues: str
     results: List[Any]
-    summary: Annotated[str, operator.add]
+    summary: str
     error: str
     visualization: Annotated[str, operator.add]
     visualization_reason: Annotated[str, operator.add]
