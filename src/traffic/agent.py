@@ -1,5 +1,6 @@
 import orjson
 import asyncio
+from functools import lru_cache
 
 from langgraph.types import Command
 from langgraph.runtime import Runtime
@@ -51,7 +52,7 @@ class TrafficAgent:
             update={"repairs_left": 0}
         )
     
-
+    @lru_cache(maxsize=5)
     async def _get_schema(self) -> str:
         """ 
         Returns comma-separated string of concatenated column names and their datatypes 
@@ -62,6 +63,7 @@ class TrafficAgent:
         return ", ".join(f'"{c}" {t}' for c, t in result["rows"])
     
 
+    @lru_cache(maxsize=5)
     async def _get_link_types(self) -> list:
         """ Returns list of valid link types """
         query = f'SELECT DISTINCT "LinkType" FROM {TRAFFIC_TABLE_NAME}'
@@ -69,6 +71,7 @@ class TrafficAgent:
         return [r[0] for r in result["rows"] if r[0]]
     
     
+    @lru_cache(maxsize=5)
     async def _get_max_min_time(self) -> str:
         """ Returns max and min time if available else n/a """
         query = f'SELECT MIN("Time"), MAX("Time") FROM {TRAFFIC_TABLE_NAME}'
@@ -80,6 +83,7 @@ class TrafficAgent:
             return "n/a"
         
 
+    @lru_cache(maxsize=5, typed=True)
     async def generate_sql(self, state: dict, runtime: Runtime[Context]) -> dict:
         """Create/Corrects SQL query for provided user question"""
         self.log.debug(f"\ntraffic_agent :: generate_sql :: state :: {state}")
@@ -173,6 +177,7 @@ class TrafficAgent:
             }
             
 
+    @lru_cache(maxsize=5, typed=True)
     async def summarize(self, state: dict) -> dict:
         """Provide summary for user question"""
         self.log.debug(f"\ntraffic_agent :: summarize :: state :: {state}")

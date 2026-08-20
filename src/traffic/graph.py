@@ -1,7 +1,5 @@
 from langgraph.graph import StateGraph, START, END
 from langgraph.types import RetryPolicy
-from langgraph.cache.memory import InMemoryCache
-from langgraph.types import CachePolicy
 
 
 from src.traffic.state import TrafficState, TrafficOutputState
@@ -22,11 +20,12 @@ class TrafficWorkflowManager:
         workflow.add_node("generate_sql", self.agent.generate_sql,
                            retry_policy=RetryPolicy(
                                max_attempts=2,
-                               initial_interval=0.5
-                           ), cache_policy=CachePolicy(ttl=600))
+                               initial_interval=0.5,
+                               retry_on=(Exception)
+                           ))
         workflow.add_node("run_sql", self.agent.run_sql)
         workflow.add_node("repair_sql", self.agent.repair_sql)
-        workflow.add_node("summarize", self.agent.summarize, cache_policy=CachePolicy(ttl=600))
+        workflow.add_node("summarize", self.agent.summarize)
         workflow.add_node("review", self.agent.review)
 
         workflow.add_edge("warmup", "generate_sql")
@@ -47,8 +46,7 @@ class TrafficWorkflowManager:
                                 summarize: bool) -> dict:
         print(f"\nTrafficGraph :: run_traffic_agent :: Q {question} :: \
               DT {mcp_server} :: SMR {summarize}")
-        _cache = InMemoryCache()
-        app = self.create_workflow().compile(checkpointer=True, cache=_cache)
+        app = self.create_workflow().compile(checkpointer=True)
         # app = self.create_workflow().compile()
         result = await app.ainvoke(
             {"question": question, "summarize": summarize,
