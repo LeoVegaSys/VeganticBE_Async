@@ -87,6 +87,8 @@ class TrafficAgent:
 
         get_schema_coro = asyncio.create_task(self._get_schema())
         get_business_coro = asyncio.create_task(get_business())
+        schema = await get_schema_coro
+        business_facts = await get_business_coro
 
         do_repair = False   #Manages SQL correction
         msgs = []
@@ -96,8 +98,6 @@ class TrafficAgent:
             self.log.debug(f"\ntraffic_agent :: generate_sql :: sql_faults :: {sql_faults}")
             do_repair = True
 
-        schema = await get_schema_coro
-        business_facts = await get_business_coro
         if do_repair:
             prompt = sql_repair_prompt(
                 db_type=MCP_DB_TYPE, business_facts=business_facts,
