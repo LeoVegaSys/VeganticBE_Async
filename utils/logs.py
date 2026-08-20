@@ -5,7 +5,7 @@ from typing import Union
 from functools import partial
 from fastlogging import LogInit
 
-from config.log import FEEDBACK_LOG_FILE, LOG_FILE, LOG_LOCATION
+from config.log import *
 
 
 class FileLogger:
@@ -16,8 +16,9 @@ class FileLogger:
 
     def get_logger(self, feedback: bool = False):
         # Fastlogging specifics
-        _f = partial(LogInit, domain="Vegayan", maxSize=81920, console=False,
-                    backupCnt=5, indent=(0,2,8), encoding='utf-8')
+        _f = partial(LogInit, domain=LOG_DOMAIN, maxSize=LOG_MAX_SIZE,
+                     console=LOG_TO_CONSOLE, backupCnt=LOG_BACKUPS,
+                     indent=LOG_INDENT, encoding=LOG_ENCODING)
         _file = self.feedback_log_file if feedback else self.log_file
         _path = os.path.join(self.log_path, _file)
         self.logger = _f(pathName=_path)
@@ -29,7 +30,8 @@ class FileLogger:
         log_path = os.path.join(current_dir, '..', LOG_LOCATION)
         os.makedirs(log_path, exist_ok=True)
         return log_path
-        
+
+    ## UNUSED FOR NOW
     async def write(self, content: Union[str, dict], feedback: bool = False):
         '''Writes to log file based on input params'''
         _file = self.feedback_log_file if feedback else self.log_file

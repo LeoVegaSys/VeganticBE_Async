@@ -107,8 +107,8 @@ class WorkflowManager:
                                            kwargs=conn_kwargs) as pool:
                 checkpointer = AsyncPostgresSaver(pool)
 
-                # app = self.create_workflow().compile(store=store, checkpointer=checkpointer)
-                app = self.create_workflow().compile(store=store)
+                app = self.create_workflow().compile(store=store, checkpointer=checkpointer)
+                # app = self.create_workflow().compile(store=store)
 
                 _uuid = rq.request_id or uuid4().hex[:12]
                 config: RunnableConfig = {
