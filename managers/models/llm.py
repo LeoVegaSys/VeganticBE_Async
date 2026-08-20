@@ -3,7 +3,7 @@ import aiohttp
 
 from config.llm import *
 from managers.models.llm_pool import get_available_port
-
+from utils.memoization import memoize, memoization_configuration as m_cfg
 
 class LLMManager:
     def __init__(self):
@@ -14,6 +14,8 @@ class LLMManager:
         self._model: str = SQL_MODEL
         self._port: int = OLLAMA_PORT
 
+
+    @memoize(configuration=m_cfg)
     async def call(
             self,
             url:str = None,

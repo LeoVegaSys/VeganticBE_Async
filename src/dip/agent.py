@@ -11,6 +11,7 @@ from config.dip import DIP_HIGH_UTIL, DIP_MIN_DROP
 from config.traffic import TRAFFIC_TABLE_NAME
 from config.llm import SUMMARY_MODEL
 from utils.prompts import summarize_prompt, fallback_summarize
+from utils.memoization import memoize, memoization_configuration as m_cfg
 
 
 class DipAgent:
@@ -22,6 +23,8 @@ class DipAgent:
         self.session_id = sid
         self.user_id = uid
 
+
+    @memoize(configuration=m_cfg)
     def _get_dip_sql_query(self, window_hours, linktype_filter, util_filter,
                            min_drop, max_drop_filter, limit):
         return f'''WITH data_end AS (SELECT MAX("Time") AS t FROM {TRAFFIC_TABLE_NAME}),
@@ -67,16 +70,22 @@ class DipAgent:
             ORDER BY "Dip %" DESC
             LIMIT {limit}'''
 
+    
+    @memoize(configuration=m_cfg)
     async def _get_link_types(self) -> list:
         """ Returns list of valid link types """
         query = f'SELECT DISTINCT "LinkType" FROM {TRAFFIC_TABLE_NAME}'
         result = await self.db_manager._execute_query(uuid=self.request_id, query=query)
         return [r[0] for r in result["rows"] if r[0]]
 
+
+    @memoize(configuration=m_cfg)
     def _extract_limit(self, default=10):
         m = re.search(r'\b(?:limit|top)\s*(\d+)\b', self.qn_low)
         return int(m.group(1)) if m else default
 
+
+    @memoize(configuration=m_cfg)
     async def _extract_linktype(self):
         if "all linktype" in self.qn_low or "across all" in self.qn_low:
             return None
@@ -87,6 +96,8 @@ class DipAgent:
                 return lt
         return None
 
+
+    @memoize(configuration=m_cfg)
     def _extract_pct(self, keyword_pattern, default):
         """Pull an explicit percentage threshold out of the question, e.g.
         'dip of at least 30%' -> 30.0, 'utilization above 90' -> 90.0.
@@ -94,6 +105,8 @@ class DipAgent:
         m = re.search(rf'{keyword_pattern}\D{{0,15}}?(\d+(?:\.\d+)?)\s*%?', self.qn_low)
         return float(m.group(1)) if m else default
 
+
+    @memoize(configuration=m_cfg)
     def _extract_dip_range(self):
         """Parse the dip threshold as a (floor, ceiling) range:
           'between 20 and 50%'  -> (20.0, 50.0)
@@ -124,7 +137,9 @@ class DipAgent:
         if m:
             return (float(m.group(1)), None)
         return (float(DIP_MIN_DROP), None)
-    
+
+
+    @memoize(configuration=m_cfg)
     def _extract_window_hours(self, default=1):
         """Pull a time window out of the question. Defaults to last 1 hour of
         the interface's OWN history (per handoff doc Section 3 default),
@@ -142,13 +157,20 @@ class DipAgent:
             return 24 * 7
         return default    
 
+
+    @memoize(configuration=m_cfg)
     async def summarize(self, state: dict) -> dict:
         """Provide additional summary"""
         
         self.log.debug(f"\ndip_agent :: summarize :: state :: {state}")
         if state["summarize"]:
             try:
-                summary_prompt = summarize_prompt(state)
+                summary_prompt = summarize_prompt().invoke({
+                    "question": state["question"],
+                    "cols": state["columns"] if "columns" in state else "",
+                    "preview" : orjson.dumps(state["results"][:40]).decode('utf-8')
+                        if "results" in state else ""
+                }).to_string()
                 if summary_prompt:
                     summary = await self.llm_manager.call(
                         prompt=summary_prompt,
@@ -175,6 +197,7 @@ class DipAgent:
         return {}
 
 
+    @memoize(configuration=m_cfg)
     async def dip_detect(self, state: dict):
         """Find interfaces whose latest sample dropped sharply vs their own recent
         baseline (baseline = avg of earlier samples within the window, excluding

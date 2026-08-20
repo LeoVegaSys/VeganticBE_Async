@@ -1,12 +1,5 @@
 import orjson
 import asyncio
-from datetime import timedelta
-
-from memoize.configuration import MutableCacheConfiguration, DefaultInMemoryCacheConfiguration
-from memoize.storage import LocalInMemoryCacheStorage
-from memoize.wrapper import memoize
-from memoize.key import EncodedMethodNameAndArgsKeyExtractor
-from memoize.eviction import LeastRecentlyUpdatedEvictionStrategy
 
 from langgraph.types import Command
 from langgraph.runtime import Runtime
@@ -21,23 +14,12 @@ from utils.context import Context
 from utils.clean import clean_sql
 from utils.categorize import intent_tag
 from utils.store import warmup_done, get_conversation_history
-# from utils.prompts import (summarize_prompt, fallback_summarize, review_prompt,
-# sql_repair_prompt, conversation_prompt, sql_generate_prompt)
-from utils.prompts2 import (summarize_prompt, fallback_summarize, review_prompt,
-sql_repair_prompt, conversation_prompt, sql_generate_prompt, memories_to_chat_msgs)
+from utils.prompts import (summarize_prompt, fallback_summarize, review_prompt,
+sql_repair_prompt, sql_generate_prompt, memories_to_chat_msgs)
+from utils.memoization import memoization_configuration as m_cfg, memoize
 from config.traffic import TRAFFIC_TABLE_NAME, QA_MAX_REPAIRS, CHART_INTENT_ALIASES
 from config.mcp import MCP_DB_TYPE
 from config.llm import SQL_MODEL, SUMMARY_MODEL
-
-
-m_cfg = MutableCacheConfiguration.initialized_with(
-    DefaultInMemoryCacheConfiguration()).set_method_timeout(
-        timedelta(minutes=5)).set_eviction_strategy(
-            LeastRecentlyUpdatedEvictionStrategy(
-                capacity=20)).set_key_extractor(
-                    EncodedMethodNameAndArgsKeyExtractor(
-                        skip_first_arg_as_self=True)).set_storage(
-                            LocalInMemoryCacheStorage())
 
 
 class TrafficAgent:
@@ -101,7 +83,6 @@ class TrafficAgent:
             return "n/a"
 
 
-    @memoize(configuration=m_cfg)
     async def generate_sql(self, state: dict, runtime: Runtime[Context]) -> dict:
         """Create/Corrects SQL query for provided user question"""
         self.log.debug(f"\ntraffic_agent :: generate_sql :: state :: {state}")
@@ -125,7 +106,7 @@ class TrafficAgent:
                 "db_type": MCP_DB_TYPE, "business_facts": business_facts,
                 "schema": schema, "question": question,
                 "bad_sql": state["sql_query"], "err": sql_faults
-            })
+            }).to_string()
         else:
             get_lts_coro = asyncio.create_task(self._get_link_types())
             get_when_coro = asyncio.create_task(self._get_max_min_time())
@@ -140,7 +121,7 @@ class TrafficAgent:
                 "table_name": TRAFFIC_TABLE_NAME, "schema": schema,
                 "lts": lts, "when": when, "question": question,
                 "conversation_history": memories_to_chat_msgs(memories)
-            })
+            }).to_string()
         try:
             self.log.debug(f"\ntraffic_agent :: generate_sql :: do_repair :: {do_repair} :: prompt :: {prompt}")
             print(f"\ntraffic_agent :: generate_sql :: do_repair :: {do_repair} :: prompt")
@@ -176,7 +157,7 @@ class TrafficAgent:
                 "question": state["question"],
                 "query": state["sql_query"],
                 "cols": state["columns"]
-            })
+            }).to_string()
             result = await self.llm_manager.call(
                 prompt=_review_prompt,
                 model=SQL_MODEL,
@@ -198,7 +179,6 @@ class TrafficAgent:
             }
 
 
-    @memoize(configuration=m_cfg)
     async def summarize(self, state: dict) -> dict:
         """Provide summary for user question"""
         self.log.debug(f"\ntraffic_agent :: summarize :: state :: {state}")
@@ -215,7 +195,7 @@ class TrafficAgent:
                 "cols": state["columns"] if "columns" in state else "",
                 "preview" : orjson.dumps(state["results"][:40]).decode('utf-8')
                   if "results" in state else ""
-            })
+            }).to_string()
             self.log.debug(f"\ntraffic_agent :: summarize :: summary_prompt :: {summary_prompt}")
             print(f"\ntraffic_agent :: summarize :: summary_prompt :: {bool(summary_prompt)}")
             if summary_prompt:

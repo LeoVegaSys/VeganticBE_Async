@@ -5,6 +5,7 @@ from langchain_mcp_adapters.tools import load_mcp_tools
 
 from config.mcp import MCP_DB_TYPE
 from utils.mcp import get_mcp_details, parse_mcp_query_response
+from utils.memoization import memoize, memoization_configuration as m_cfg
 
 
 class DatabaseManager:
@@ -27,6 +28,7 @@ class DatabaseManager:
     #     return result
 
 
+    @memoize(configuration=m_cfg)
     async def _execute_query(self, uuid: str, query: str, mcp_server_name: str = ""):
         """ Calls Database MCP server and returns query results"""
         try:
