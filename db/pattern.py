@@ -1,20 +1,7 @@
-from abc import ABC, abstractmethod
-
+from base_class import AbstractDB
 from db.traffic_data_last_3days.src import TrafficDataLastThreeDays
 
 
-class AbstractDB(ABC):
-
-    @property
-    @abstractmethod
-    def db_type(self):
-        pass
-
-    async def get_sql_generate_prompt(self, **kwargs):
-        pass
-    
-    async def get_sql_repair_prompt(self, **kwargs):
-        pass
 
 
 
