@@ -1,8 +1,5 @@
-from base_class import AbstractDB
+from db.base_class import AbstractDB
 from db.traffic_data_last_3days.src import TrafficDataLastThreeDays
-
-
-
 
 
 class DBFactory:

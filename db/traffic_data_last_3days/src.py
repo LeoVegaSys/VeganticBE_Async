@@ -5,7 +5,7 @@ from utils.memoization import memoization_configuration as m_cfg, memoize
 from utils.store import get_conversation_history
 from utils.prompts import (memories_to_chat_msgs, sql_repair_prompt)
 
-from db.pattern import AbstractDB
+from db.base_class import AbstractDB
 from db.traffic_data_last_3days.config import *
 from db.traffic_data_last_3days.skills import get_business
 from db.traffic_data_last_3days.prompts import sql_generate_prompt
@@ -16,11 +16,13 @@ class TrafficDataLastThreeDays(AbstractDB):
         self.db_type = MCP_DB_TYPE
         self.db_manager = DatabaseManager(db_type=self.db_type)
 
-
     @property
     def db_type(self):
         return self.db_type
 
+    @db_type.setter
+    def db_type(self, value):
+        self._db_type = value
 
     async def get_sql_generate_prompt(
             self, request_id: str, user_id: str, question: str):
