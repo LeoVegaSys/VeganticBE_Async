@@ -11,7 +11,7 @@ class InputState(TypedDict):
     user_id: str
     # messages : Annotated[list[AnyMessage], add_messages]
     question: str
-    mcp_server: str
+    data_source: str
     sql_query: str
     sql_valid: bool
     sql_issues: str
@@ -35,7 +35,7 @@ class OutputState(TypedDict):
     user_id: str
     # messages : Annotated[list[AnyMessage], add_messages]
     question: str
-    mcp_server: str
+    data_source: str
     sql_query: str
     sql_valid: bool
     sql_issues: str

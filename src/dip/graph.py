@@ -2,7 +2,7 @@ from langgraph.graph import StateGraph, START, END
 
 from src.dip.state import DipState, DipOutputState
 from src.dip.agent import DipAgent
-
+from config.dip import DIP_MCP
 
 class DipWorkflowManager:
     def __init__(self, rid: str, sid: str, uid: str):
@@ -29,15 +29,14 @@ class DipWorkflowManager:
         return self.create_workflow().compile(checkpointer=True)
 
     
-    async def run_dip_agent(self, question: str, mcp_server: str,
-                             summarize: bool) -> dict:
+    async def run_dip_agent(self, question: str, summarize: bool) -> dict:
         print(f"\nDipGraph :: run_dip_agent :: Q {question} :: \
-              DT {mcp_server} :: SMR {summarize}")
+              DT {DIP_MCP} :: SMR {summarize}")
         app = self.create_workflow().compile(checkpointer=True)
         # app = self.create_workflow().compile()
         result = await app.ainvoke(
             {"question": question, "summarize": summarize,
-             "mcp_server":mcp_server}
+             "mcp_server":DIP_MCP}
         )
         print(f"\nrun_dip_agent :: result :: {result}")
         return result

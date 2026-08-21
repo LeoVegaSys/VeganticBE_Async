@@ -2,7 +2,7 @@ import random
 from typing import Union
 from dataclasses import dataclass
 
-from config.mcp import MCP_DB_TYPE
+from config.traffic import DATA_SOURCE
 from config.scratchpad import USERS, SESSIONS, REQUESTS
 
 @dataclass
@@ -16,7 +16,7 @@ class QueryRequest:
             return None
         self.question = body.get("question", "").strip()
         self.user_response = body.get("user_response", "").strip()
-        self.mcp_server = body.get("db_type", MCP_DB_TYPE)
+        self.data_source = body.get("data_source", DATA_SOURCE)
         _no_summary = body.get("no_summary", False)
         self.summarize = not body.get("summarize", _no_summary)
         self.request_id = body.get("request_id", f"req_{random.choice(range(REQUESTS))}")

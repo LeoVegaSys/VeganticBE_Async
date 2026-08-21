@@ -1,5 +1,4 @@
 import orjson
-import asyncio
 
 from langgraph.types import Command
 from langgraph.runtime import Runtime
@@ -9,27 +8,26 @@ from langchain_core.output_parsers import JsonOutputParser
 from managers.database.db import DatabaseManager
 from managers.models.llm import LLMManager
 from utils.logs import FileLogger
-from utils.skills import get_business
 from utils.context import Context
 from utils.clean import clean_sql
 from utils.categorize import intent_tag
-from utils.store import warmup_done, get_conversation_history
-from utils.prompts import (summarize_prompt, fallback_summarize, review_prompt,
-sql_repair_prompt, sql_generate_prompt, memories_to_chat_msgs)
-from utils.memoization import memoization_configuration as m_cfg, memoize
-from config.traffic import TRAFFIC_TABLE_NAME, QA_MAX_REPAIRS, CHART_INTENT_ALIASES
-from config.mcp import MCP_DB_TYPE
+from utils.prompts import (summarize_prompt, fallback_summarize, review_prompt)
+from config.traffic import QA_MAX_REPAIRS, CHART_INTENT_ALIASES
 from config.llm import SQL_MODEL, SUMMARY_MODEL
+
+from db.pattern import DBFactory
 
 
 class TrafficAgent:
-    def __init__(self, rid: str, sid: str, uid: str):
+    def __init__(
+            self, req_id: str, sess_id: str, usr_id: str, db_name: str):
         self.db_manager = DatabaseManager()
         self.llm_manager = LLMManager()
         self.log = FileLogger().get_logger()
-        self.request_id = rid
-        self.session_id = sid
-        self.user_id = uid
+        self.data_source = DBFactory().get(db_name=db_name)
+        self.request_id = req_id
+        self.session_id = sess_id
+        self.user_id = usr_id
 
 
     def repair_sql(self, state: dict) -> dict:
@@ -51,47 +49,12 @@ class TrafficAgent:
             goto="summarize",
             update={"repairs_left": 0}
         )
-    
-    @memoize(configuration=m_cfg)
-    async def _get_schema(self) -> str:
-        """ 
-        Returns comma-separated string of concatenated column names and their datatypes 
-        """
-        query = f"SELECT column_name, data_type FROM information_schema.columns \
-        WHERE table_name = '{TRAFFIC_TABLE_NAME}' ORDER BY ordinal_position"
-        result = await self.db_manager._execute_query(uuid=self.request_id, query=query)
-        return ", ".join(f'"{c}" {t}' for c, t in result["rows"])
 
 
-    @memoize(configuration=m_cfg)
-    async def _get_link_types(self) -> list:
-        """ Returns list of valid link types """
-        query = f'SELECT DISTINCT "LinkType" FROM {TRAFFIC_TABLE_NAME}'
-        result = await self.db_manager._execute_query(uuid=self.request_id, query=query)
-        return [r[0] for r in result["rows"] if r[0]]
-
-
-    @memoize(configuration=m_cfg)
-    async def _get_max_min_time(self) -> str:
-        """ Returns max and min time if available else n/a """
-        query = f'SELECT MIN("Time"), MAX("Time") FROM {TRAFFIC_TABLE_NAME}'
-        try:
-            result = await self.db_manager._execute_query(uuid=self.request_id, query=query)
-            min, max = result["rows"][0]
-            return f"{min} -> {max}"
-        except Exception as e:
-            return "n/a"
-
-
-    async def generate_sql(self, state: dict, runtime: Runtime[Context]) -> dict:
+    async def generate_sql(self, state: dict) -> dict:
         """Create/Corrects SQL query for provided user question"""
         self.log.debug(f"\ntraffic_agent :: generate_sql :: state :: {state}")
         question = state["question"]
-
-        get_schema_coro = asyncio.create_task(self._get_schema())
-        get_business_coro = asyncio.create_task(get_business())
-        schema = await get_schema_coro
-        business_facts = await get_business_coro
 
         do_repair = False   #Manages SQL correction
         msgs = []
@@ -102,26 +65,15 @@ class TrafficAgent:
             do_repair = True
 
         if do_repair:
-            prompt = sql_repair_prompt().invoke({
-                "db_type": MCP_DB_TYPE, "business_facts": business_facts,
-                "schema": schema, "question": question,
-                "bad_sql": state["sql_query"], "err": sql_faults
-            }).to_string()
+            prompt = await self.data_source.get_sql_repair_prompt(
+                request_id=self.request_id, question=question,
+                query=state["sql_query"], faults=sql_faults
+            )
         else:
-            get_lts_coro = asyncio.create_task(self._get_link_types())
-            get_when_coro = asyncio.create_task(self._get_max_min_time())
-            get_memories_coro = asyncio.create_task(get_conversation_history(
-                user_id=runtime.context.user_id, params=["question", "answer"]))
-            memories = await get_memories_coro
-            lts = await get_lts_coro
-            when = await get_when_coro
-
-            prompt = sql_generate_prompt().invoke({
-                "db_type": MCP_DB_TYPE, "business_facts": business_facts,
-                "table_name": TRAFFIC_TABLE_NAME, "schema": schema,
-                "lts": lts, "when": when, "question": question,
-                "conversation_history": memories_to_chat_msgs(memories)
-            }).to_string()
+            prompt = await self.data_source.get_sql_generate_prompt(
+                request_id=self.request_id, user_id=self.user_id,
+                question=question
+            )
         try:
             self.log.debug(f"\ntraffic_agent :: generate_sql :: do_repair :: {do_repair} :: prompt :: {prompt}")
             print(f"\ntraffic_agent :: generate_sql :: do_repair :: {do_repair} :: prompt")
@@ -262,7 +214,8 @@ class TrafficAgent:
         
         try:
             result = await self.db_manager._execute_query(
-                uuid=self.request_id, query=query)
+                uuid=self.request_id, query=query,
+                mcp_server_name=self.data_source.db_type)
             return {
                 # "messages": ToolMessage(
                 #     content=orjson.dumps(result["data"]).decode('utf-8'),

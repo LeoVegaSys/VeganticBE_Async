@@ -10,29 +10,15 @@ from utils.memoization import memoize, memoization_configuration as m_cfg
 
 class DatabaseManager:
 
-    def __init__(self):
-        # self.endpoint_url = DB_ENDPOINT_URL
-        pass
-
-    # def get_schema(self, uuid: str, db_name:str) -> str:
-    #     """Retrieve the database schema."""
-    #     print(f"\nDBM :: schema :: DB {db_name} :: ID {uuid}")
-    #     result=asyncio.run(_get_schema(uuid, db_name))
-    #     return result
-    
-
-    # def execute_query(self, uuid: str, query: str) -> List[Any]:
-    #     """Execute SQL query on the remote database and return results.""" 
-    #     print(f"\nDBM :: Q {query} :: ID {uuid} :: DT {MCP_DB_TYPE}")
-    #     result=asyncio.run(_execute_query(uuid, query))
-    #     return result
+    def __init__(self, db_type: str = ""):
+        self.mcp_server_name = db_type
 
 
     @memoize(configuration=m_cfg)
     async def _execute_query(self, uuid: str, query: str, mcp_server_name: str = ""):
         """ Calls Database MCP server and returns query results"""
         try:
-            mcp_server = mcp_server_name or MCP_DB_TYPE.lower()
+            mcp_server = mcp_server_name or self.mcp_server_name
             mcp_config, mcp_func, mcp_key = get_mcp_details()
             mcp_client = MultiServerMCPClient(mcp_config)
 
@@ -59,7 +45,7 @@ class DatabaseManager:
         Make sure to make the database schema available in the MCP server
         """
         try:
-            mcp_server = mcp_server_name or MCP_DB_TYPE.lower()
+            mcp_server = mcp_server_name or self.mcp_server_name
             mcp_config, mcp_func, mcp_key = get_mcp_details()
             mcp_client = MultiServerMCPClient(mcp_config)
 

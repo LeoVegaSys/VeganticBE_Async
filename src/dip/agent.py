@@ -1,13 +1,14 @@
 import re
 import orjson
 import asyncio
+from functools import lru_cache
 
 from langchain.messages import HumanMessage, SystemMessage, AIMessage, ToolMessage
 
 from managers.database.db import DatabaseManager
 from managers.models.llm import LLMManager
 from utils.logs import FileLogger
-from config.dip import DIP_HIGH_UTIL, DIP_MIN_DROP
+from config.dip import DIP_HIGH_UTIL, DIP_MIN_DROP, DIP_MCP
 from config.traffic import TRAFFIC_TABLE_NAME
 from config.llm import SUMMARY_MODEL
 from utils.prompts import summarize_prompt, fallback_summarize
@@ -16,14 +17,14 @@ from utils.memoization import memoize, memoization_configuration as m_cfg
 
 class DipAgent:
     def __init__(self, rid: str, sid: str, uid: str):
-        self.db_manager = DatabaseManager()
+        self.db_manager = DatabaseManager(db_type=DIP_MCP)
         self.llm_manager = LLMManager()
         self.log = FileLogger().get_logger()
         self.request_id = rid
         self.session_id = sid
         self.user_id = uid
 
-
+    @lru_cache(maxsize=5)
     def _get_dip_sql_query(self, window_hours, linktype_filter, util_filter,
                            min_drop, max_drop_filter, limit):
         return f'''WITH data_end AS (SELECT MAX("Time") AS t FROM {TRAFFIC_TABLE_NAME}),
@@ -78,6 +79,7 @@ class DipAgent:
         return [r[0] for r in result["rows"] if r[0]]
 
 
+    @lru_cache(maxsize=2)
     def _extract_limit(self, default=10):
         m = re.search(r'\b(?:limit|top)\s*(\d+)\b', self.qn_low)
         return int(m.group(1)) if m else default
@@ -95,6 +97,7 @@ class DipAgent:
         return None
 
 
+    @lru_cache(maxsize=5)
     def _extract_pct(self, keyword_pattern, default):
         """Pull an explicit percentage threshold out of the question, e.g.
         'dip of at least 30%' -> 30.0, 'utilization above 90' -> 90.0.
@@ -103,6 +106,7 @@ class DipAgent:
         return float(m.group(1)) if m else default
 
 
+    @lru_cache(maxsize=2)
     def _extract_dip_range(self):
         """Parse the dip threshold as a (floor, ceiling) range:
           'between 20 and 50%'  -> (20.0, 50.0)
@@ -135,6 +139,7 @@ class DipAgent:
         return (float(DIP_MIN_DROP), None)
 
 
+    @lru_cache(maxsize=2)
     def _extract_window_hours(self, default=1):
         """Pull a time window out of the question. Defaults to last 1 hour of
         the interface's OWN history (per handoff doc Section 3 default),

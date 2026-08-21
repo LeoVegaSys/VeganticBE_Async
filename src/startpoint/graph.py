@@ -32,10 +32,10 @@ async def classify_query(state: dict, runtime: Runtime[Context]) -> str:
 async def call_traffic_graph(state: InputState, runtime: Runtime[Context]):
     print(f"\ncall_traffic_graph :: state :: {state}")
     result = await TrafficWorkflowManager(
-        rid=state["request_id"], sid=state["session_id"], uid=state["user_id"]
-    ).run_traffic_agent(
-        question=state["question"], summarize=state["summarize"],
-        mcp_server=state["mcp_server"])
+        rid=state["request_id"], sid=state["session_id"], uid=state["user_id"],
+        source=state["data_source"]
+    ).run_traffic_agent(question=state["question"],
+                        summarize=state["summarize"])
     
     # Write question to store
     await add_to_memories(user_id=runtime.context.user_id,
@@ -55,8 +55,7 @@ async def call_dip_graph(state: InputState, runtime: Runtime[Context]):
     result = await DipWorkflowManager(
         rid=state["request_id"], sid=state["session_id"], uid=state["user_id"]
     ).run_dip_agent(
-        question=state["question"], summarize=state["summarize"],
-        mcp_server=state["mcp_server"])
+        question=state["question"], summarize=state["summarize"])
         
     # Write question to store
     await add_to_memories(user_id=runtime.context.user_id,
@@ -66,7 +65,7 @@ async def call_dip_graph(state: InputState, runtime: Runtime[Context]):
     await add_to_memories(user_id=runtime.context.user_id, param_key="answer",
                             data=result,
                             fields_to_copy=["sql_query", "summary", "error"])
-    print(f"\ndipGraph :: ncall_dip_graph :: result :: {result}")
+    print(f"\ndipGraph :: call_dip_graph :: result :: {result}")
     return result
 
 
@@ -125,12 +124,12 @@ class WorkflowManager:
                         input={"question": rq.question, "request_id": _uuid,
                             "session_id": rq.session_id, "user_id": rq.user_id,
                             "summarize": rq.summarize,
-                            "mcp_server": rq.mcp_server},
+                            "data_source": rq.data_source},
                         config=config, context=context)
 
-                snapshot = await app.aget_state(config)
-                if snapshot.interrupts:
-                    result["user_input_required"] = snapshot.interrupts[0].value
+                # snapshot = await app.aget_state(config)
+                # if snapshot.interrupts:
+                #     result["user_input_required"] = snapshot.interrupts[0].value
 
                 print(f"\ngraph :: answer_query :: result :: {result}")
                 return result

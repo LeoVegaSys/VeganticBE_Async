@@ -7,8 +7,9 @@ from src.traffic.agent import TrafficAgent
 
 
 class TrafficWorkflowManager:
-    def __init__(self, rid: str, sid: str, uid: str):
-        self.agent=TrafficAgent(rid, sid, uid)
+    def __init__(self, rid: str, sid: str, uid: str, source: str):
+        self.agent=TrafficAgent(req_id=rid, sess_id=sid, usr_id=uid,
+                                db_name=source)
 
     def create_workflow(self) -> StateGraph:
         """Create and configure the workflow graph."""
@@ -17,12 +18,10 @@ class TrafficWorkflowManager:
                               output_schema=TrafficOutputState)
 
         workflow.add_node("warmup", self.agent.warmup)
-        workflow.add_node("generate_sql", self.agent.generate_sql,
-                           retry_policy=RetryPolicy(
-                               max_attempts=2,
-                               initial_interval=0.5,
-                               retry_on=(Exception)
-                           ))
+        workflow.add_node(
+            "generate_sql", self.agent.generate_sql,
+            retry_policy=RetryPolicy(max_attempts=2, initial_interval=0.5,
+                                     retry_on=(Exception)))
         workflow.add_node("run_sql", self.agent.run_sql)
         workflow.add_node("repair_sql", self.agent.repair_sql)
         workflow.add_node("summarize", self.agent.summarize)
@@ -42,15 +41,13 @@ class TrafficWorkflowManager:
     def returnGraph(self):
         return self.create_workflow().compile(checkpointer=True)
 
-    async def run_traffic_agent(self, question: str, mcp_server: str,
-                                summarize: bool) -> dict:
+    async def run_traffic_agent(self, question: str, summarize: bool) -> dict:
         print(f"\nTrafficGraph :: run_traffic_agent :: Q {question} :: \
-              DT {mcp_server} :: SMR {summarize}")
+              :: SMR {summarize}")
         app = self.create_workflow().compile(checkpointer=True)
         # app = self.create_workflow().compile()
         result = await app.ainvoke(
-            {"question": question, "summarize": summarize,
-             "mcp_server":mcp_server}
+            {"question": question, "summarize": summarize}
         )
         print(f"\nrun_traffic_agent :: result :: {result}")
         return result

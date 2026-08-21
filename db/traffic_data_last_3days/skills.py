@@ -1,14 +1,22 @@
 import os
 import aiofiles
 
-from config.skills import FALLBACK_BUSINESS_FACTS, QA_BUSINESS_FACTS
+from utils.memoization import memoize, memoization_configuration as m_cfg
 
 
+QA_BUSINESS_FACTS="business_facts.md"
+
+FALLBACK_BUSINESS_FACTS="""
+DOMAIN: (business_facts.md not found — running with no domain rules loaded.
+Set appropriate QA_BUSINESS_FACTS in .env OR place business_facts.md in skills folder.)
+"""
+
+@memoize(configuration=m_cfg)
 async def get_content(skills_file_name : str, skills_folder_name: str = "skills"):
     # Join path and filename
     current_dir = os.path.dirname(os.path.abspath(__file__))
-    adjacent_dir = os.path.join(current_dir, '..', skills_folder_name)
-    skills_file = os.path.join(adjacent_dir, skills_file_name)
+    skills_dir = os.path.join(current_dir, skills_folder_name)
+    skills_file = os.path.join(skills_dir, skills_file_name)
     
     # Asynchronously read the file
     async with aiofiles.open(skills_file, mode='r') as f:

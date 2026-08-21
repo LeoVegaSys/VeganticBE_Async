@@ -9,7 +9,7 @@ class TrafficState(TypedDict):
     # request_id: str
     # messages : Annotated[list[AnyMessage], add_messages]
     question: str
-    mcp_server: str
+    # mcp_server: str
     sql_query: str
     sql_valid: bool
     sql_issues: str
@@ -31,7 +31,7 @@ class TrafficOutputState(TypedDict):
     # request_id: str
     # messages : Annotated[list[AnyMessage], add_messages]
     question: str
-    mcp_server: str
+    # mcp_server: str
     sql_query: str
     sql_valid: bool
     sql_issues: str
