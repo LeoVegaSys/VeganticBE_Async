@@ -1,5 +1,6 @@
 import json
 import asyncio
+from uuid import uuid4
 
 from langgraph.store.redis.aio import AsyncRedisStore
 
@@ -37,20 +38,21 @@ async def manage_store(user_id: str):
         return False
 
 
-async def write_to_store(user_id: str, category: str, param: str, data: str):
-    from uuid import uuid4
+async def write_to_store(user_id: str, category: str, param: str, data: str,
+                         key: str = ""):
+    _key = key or str(uuid4())
     try:
         async with AsyncRedisStore.from_conn_string(REDIS_STORE_URI) as store:
             await store.aput(
                 namespace=(category, user_id),
-                key=str(uuid4()),
+                key=_key,
                 value={param : data}
             )
     except Exception as e:
         print(f"Error occurred during store write : {str(e)}")
 
 
-async def add_to_memories(user_id: str, param_key: str, data: dict,
+async def add_to_memories(user_id: str, param_key: str, data: dict, key: str,
                           fields_to_copy: list = []):
     '''
     Writes user memories to store
@@ -71,7 +73,7 @@ async def add_to_memories(user_id: str, param_key: str, data: dict,
         print(f"Store W :: JSON conversion failed for {r} with error {str(e)}")
         return
     await write_to_store(user_id=user_id, category=HISTORY, param=param_key, 
-                         data=res)
+                         data=res, key=key)
 
 
 async def clear_store(user_id: str, category: str = ""):

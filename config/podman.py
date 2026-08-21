@@ -1,0 +1,2 @@
+POD_UTIL_THRESHOLD=10.0
+LLM_PODMAN_PREFIX="ollama-gpu-pod"

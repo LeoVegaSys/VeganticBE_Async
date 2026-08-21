@@ -9,7 +9,8 @@ import os
 import random
 from podman import PodmanClient
 
-from config.llm import LLM_PODMAN_PREFIX, LLM_PORT_CONFIG, OLLAMA_HOST
+from config.llm import LLM_PORT_CONFIG, OLLAMA_HOST
+from config.podman import LLM_PODMAN_PREFIX, POD_UTIL_THRESHOLD
 
 '''
 To enable podman.sock for rootless podman execution:
@@ -58,7 +59,7 @@ def get_available_port(model: str):
                     # Get total utilization of running podman processes
                     c_util = get_total_utiln(c.top(ps_args=['pcpu'])['Processes'])
                     print(f"CNAME :: {c.name} :: PROCS_COUNT :: {n_running_procs} :: UTIL :: {c_util}")
-                    if (n_running_procs < 2) or (c_util < 10.0):
+                    if (n_running_procs < 2) or (c_util < float(POD_UTIL_THRESHOLD)):
                         # Get podman host port details
                         c_port_info = c.inspect()['NetworkSettings']['Ports']['11434/tcp'][0]
                         print(f"{c.name} :: CPRTS :: {c_port_info}")
