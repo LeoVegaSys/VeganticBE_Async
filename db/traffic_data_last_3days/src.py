@@ -14,15 +14,11 @@ from db.traffic_data_last_3days.prompts import sql_generate_prompt
 class TrafficDataLastThreeDays(AbstractDB):
     def __init__(self):
         self.db_type = MCP_DB_TYPE
-        self.db_manager = DatabaseManager(db_type=self.db_type)
+        self.db_manager = DatabaseManager(self.db_type)
 
-    @property
-    def db_type(self):
+    def get_db_type(self):
         return self.db_type
 
-    @db_type.setter
-    def db_type(self, value):
-        self._db_type = value
 
     async def get_sql_generate_prompt(
             self, request_id: str, user_id: str, question: str):
