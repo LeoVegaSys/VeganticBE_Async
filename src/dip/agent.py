@@ -158,7 +158,7 @@ class DipAgent:
             return 24 * 7
         return default    
 
-    @async_delay
+    @async_delay()
     async def summarize(self, state: dict) -> dict:
         """Provide additional summary"""
         
@@ -196,7 +196,7 @@ class DipAgent:
                 }
         return {}
 
-    @async_delay
+    @async_delay()
     @memoize(configuration=m_cfg)
     async def dip_detect(self, state: dict):
         """Find interfaces whose latest sample dropped sharply vs their own recent

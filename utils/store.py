@@ -4,7 +4,9 @@ from uuid import uuid4
 
 from langgraph.store.redis.aio import AsyncRedisStore
 
-from config.store import *
+from config.store import (KEEP_FIRST_N, KEEP_LAST_N, KEEP_THRESHOLD,
+                          REDIS_HOST, REDIS_PORT, REDIS_TTL, STORE_DB, HISTORY,
+                          WARMUP)
 from config.llm import OLLAMA_KEEP_ALIVE
 
 REDIS_STORE_URI = f"{STORE_DB}://{REDIS_HOST}:{REDIS_PORT}"
@@ -27,7 +29,7 @@ async def manage_store(user_id: str):
         async with AsyncRedisStore.from_conn_string(REDIS_STORE_URI) as store:
             namespaces = await store.alist_namespaces(suffix=(user_id,))
             for ns in namespaces:
-                results = await store.asearch(ns, limit=50)
+                results = await store.asearch(ns, limit=KEEP_THRESHOLD)
                 print(f"store :: manage :: UID {user_id} :: NS {ns} :: LEN {len(results)}")
                 if len(results) > KEEP_THRESHOLD:
                     r_sorted = sorted(results, key=lambda x: x.updated_at)
@@ -88,7 +90,7 @@ async def clear_store(user_id: str, category: str = ""):
             else:
                 namespaces = await store.alist_namespaces(suffix=(user_id,))
             for ns in namespaces:
-                results = await store.asearch(ns, limit=50)
+                results = await store.asearch(ns, limit=KEEP_THRESHOLD)
                 print(f"store :: clear :: UID {user_id} :: NS {ns} :: LEN {len(results)}")
                 to_delete = [store.adelete(ns, key=r.key) for r in results]
                 await asyncio.gather(*to_delete)
@@ -105,7 +107,7 @@ async def read_from_store(user_id: str, category: str, params: list[str] = []) -
     try:
         async with AsyncRedisStore.from_conn_string(REDIS_STORE_URI) as store:
             namespace = (category, user_id)
-            results = await store.asearch(namespace, limit=50)
+            results = await store.asearch(namespace, limit=KEEP_THRESHOLD)
             print(f"store :: read :: UID {user_id} :: NS {namespace} :: LEN {len(results)}")
             if results:
                 if params:
