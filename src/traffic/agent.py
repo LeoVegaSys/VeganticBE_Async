@@ -14,6 +14,7 @@ from utils.categorize import intent_tag
 from utils.prompts import (summarize_prompt, fallback_summarize, review_prompt)
 from config.traffic import QA_MAX_REPAIRS, CHART_INTENT_ALIASES
 from config.llm import SQL_MODEL, SUMMARY_MODEL
+from utils.delay import async_delay
 
 from db.pattern import DBFactory
 
@@ -50,7 +51,7 @@ class TrafficAgent:
             update={"repairs_left": 0}
         )
 
-
+    @async_delay
     async def generate_sql(self, state: dict) -> dict:
         """Create/Corrects SQL query for provided user question"""
         self.log.debug(f"\ntraffic_agent :: generate_sql :: state :: {state}")
@@ -98,6 +99,7 @@ class TrafficAgent:
             return {"sql_query": "", "sql_valid": False, "sql_issues": "", "error": _error}
 
 
+    @async_delay
     async def review(self, state: dict):
         """Review SQL against original question"""
         self.log.debug(f"\ntraffic_agent :: review :: state :: {state}")
@@ -131,6 +133,7 @@ class TrafficAgent:
             }
 
 
+    @async_delay
     async def summarize(self, state: dict) -> dict:
         """Provide summary for user question"""
         self.log.debug(f"\ntraffic_agent :: summarize :: state :: {state}")
@@ -175,6 +178,7 @@ class TrafficAgent:
             }
 
 
+    @async_delay
     async def warmup(self, state: dict, runtime: Runtime[Context]) -> dict:
         self.log.debug(f"\ntraffic_agent :: warmup :: state :: {state}")
         print(f"\ntraffic_agent :: warmup :: UID :: {runtime.context.user_id}")
@@ -198,6 +202,7 @@ class TrafficAgent:
         }
     
 
+    @async_delay
     async def run_sql(self, state: dict) -> dict:
         """Execute query"""
         self.log.debug(f"\ntraffic_agent :: run_sql :: state :: {state}")

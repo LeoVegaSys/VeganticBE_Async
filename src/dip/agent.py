@@ -13,6 +13,7 @@ from config.traffic import TRAFFIC_TABLE_NAME
 from config.llm import SUMMARY_MODEL
 from utils.prompts import summarize_prompt, fallback_summarize
 from utils.memoization import memoize, memoization_configuration as m_cfg
+from utils.delay import async_delay
 
 
 class DipAgent:
@@ -157,7 +158,7 @@ class DipAgent:
             return 24 * 7
         return default    
 
-
+    @async_delay
     async def summarize(self, state: dict) -> dict:
         """Provide additional summary"""
         
@@ -195,7 +196,7 @@ class DipAgent:
                 }
         return {}
 
-
+    @async_delay
     @memoize(configuration=m_cfg)
     async def dip_detect(self, state: dict):
         """Find interfaces whose latest sample dropped sharply vs their own recent
