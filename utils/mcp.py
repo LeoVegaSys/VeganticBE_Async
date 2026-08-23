@@ -1,20 +1,21 @@
 import json
 from typing import Union
 
-from config.mcp import MCP_CONFIG
 
-def get_mcp_details():
-    mcp_server_config = {}
-    mcp_func = {}
-    mcp_key = {}
-    for key, val in MCP_CONFIG.items():
+def get_mcp_details(mcp_config: dict):
+    _server_config = {}
+    _func = ""
+    _key = ""
+    _name = ""
+    for key, val in mcp_config.items():
         """Get MCP server details"""
-        mcp_server_config[key] = val["server"]
+        _name = key
+        _server_config = val["server"]
         """Get MCP executor function details"""
-        mcp_func[key] = val["query_function"]
+        _func = val["query_function"]
         """Get MCP API key details"""
-        mcp_key[key] = val["query_key"]
-    return (mcp_server_config, mcp_func, mcp_key)
+        _key = val["query_key"]
+    return (_name, _server_config, _func, _key)
 
 def parse_mcp_query_response(mcp_result: Union[list, dict, str, None], tool_name: str = "") -> dict:
     """

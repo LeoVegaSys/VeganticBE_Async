@@ -5,25 +5,28 @@ from functools import lru_cache
 
 from langchain.messages import HumanMessage, SystemMessage, AIMessage, ToolMessage
 
-from managers.database.db import DatabaseManager
 from managers.models.llm import LLMManager
 from utils.logs import FileLogger
-from config.dip import DIP_HIGH_UTIL, DIP_MIN_DROP, DIP_MCP
+from config.dip import DIP_HIGH_UTIL, DIP_MIN_DROP
 from config.traffic import TRAFFIC_TABLE_NAME
 from config.llm import SUMMARY_MODEL
 from utils.prompts import summarize_prompt, fallback_summarize
 from utils.memoization import memoize, memoization_configuration as m_cfg
 from utils.delay import async_delay
 
+from db.pattern import DBFactory
+
 
 class DipAgent:
-    def __init__(self, rid: str, sid: str, uid: str):
-        self.db_manager = DatabaseManager(db_type=DIP_MCP)
+    def __init__(
+            self, req_id: str, sess_id: str, usr_id: str, db_name: str):
+        self.data_source = DBFactory().get(db_name=db_name)
+        self.db_manager = self.data_source.get_db_manager()
         self.llm_manager = LLMManager()
         self.log = FileLogger().get_logger()
-        self.request_id = rid
-        self.session_id = sid
-        self.user_id = uid
+        self.request_id = req_id
+        self.session_id = sess_id
+        self.user_id = usr_id
 
     @lru_cache(maxsize=5)
     def _get_dip_sql_query(self, window_hours, linktype_filter, util_filter,

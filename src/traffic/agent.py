@@ -5,7 +5,6 @@ from langgraph.runtime import Runtime
 from langchain.messages import HumanMessage, SystemMessage, AIMessage, ToolMessage
 from langchain_core.output_parsers import JsonOutputParser
 
-from managers.database.db import DatabaseManager
 from managers.models.llm import LLMManager
 from utils.logs import FileLogger
 from utils.context import Context
@@ -22,10 +21,10 @@ from db.pattern import DBFactory
 class TrafficAgent:
     def __init__(
             self, req_id: str, sess_id: str, usr_id: str, db_name: str):
-        self.db_manager = DatabaseManager()
+        self.data_source = DBFactory().get(db_name=db_name)
+        self.db_manager = self.data_source.get_db_manager()
         self.llm_manager = LLMManager()
         self.log = FileLogger().get_logger()
-        self.data_source = DBFactory().get(db_name=db_name)
         self.request_id = req_id
         self.session_id = sess_id
         self.user_id = usr_id
