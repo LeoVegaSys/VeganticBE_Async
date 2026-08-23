@@ -5,8 +5,9 @@ from src.dip.agent import DipAgent
 from config.dip import DIP_MCP
 
 class DipWorkflowManager:
-    def __init__(self, rid: str, sid: str, uid: str):
-        self.dip_agent=DipAgent(rid, sid, uid)
+    def __init__(self, rid: str, sid: str, uid: str, source: str):
+        self.dip_agent=DipAgent(req_id=rid, sess_id=sid, usr_id=uid,
+                                db_name=source)
 
     def create_workflow(self) -> StateGraph:
         """Create and configure the workflow graph."""
@@ -30,13 +31,11 @@ class DipWorkflowManager:
 
     
     async def run_dip_agent(self, question: str, summarize: bool) -> dict:
-        print(f"\nDipGraph :: run_dip_agent :: Q {question} :: \
-              DT {DIP_MCP} :: SMR {summarize}")
+        print(f"\nDipGraph :: run_dip_agent :: Q {question} :: SM {summarize}")
         app = self.create_workflow().compile(checkpointer=True)
         # app = self.create_workflow().compile()
         result = await app.ainvoke(
-            {"question": question, "summarize": summarize,
-             "mcp_server":DIP_MCP}
+            {"question": question, "summarize": summarize}
         )
         print(f"\nrun_dip_agent :: result :: {result}")
         return result
