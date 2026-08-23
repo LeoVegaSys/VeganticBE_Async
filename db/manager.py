@@ -19,7 +19,7 @@ class DatabaseManager:
                 self.mcp_config)
             mcp_client = MultiServerMCPClient(_mcp_config)
 
-            async with mcp_client.session() as session:
+            async with mcp_client.session(server_name=mcp_server) as session:
             # Get tools
                 # tools = await mcp_client.get_tools(server_name=mcp_server)
                 tools = await load_mcp_tools(session)
@@ -46,7 +46,7 @@ class DatabaseManager:
                             self.mcp_config)
             mcp_client = MultiServerMCPClient(_mcp_config)
 
-            async with mcp_client.session() as session:
+            async with mcp_client.session(server_name=mcp_server) as session:
                 schema = await session.read_resource(f"schema://{db_name}")
                 result = schema.contents[0].text
             print(f"\nDBM :: _get_schema :: Result: {result}")
