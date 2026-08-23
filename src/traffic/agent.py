@@ -218,8 +218,7 @@ class TrafficAgent:
         
         try:
             result = await self.db_manager._execute_query(
-                uuid=self.request_id, query=query,
-                mcp_server_name=self.data_source.db_type)
+                uuid=self.request_id, query=query)
             return {
                 # "messages": ToolMessage(
                 #     content=orjson.dumps(result["data"]).decode('utf-8'),

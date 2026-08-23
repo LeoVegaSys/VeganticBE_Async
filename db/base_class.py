@@ -3,9 +3,6 @@ from abc import ABC, abstractmethod
 
 class AbstractDB(ABC):
 
-    def get_db_type(self):
-        pass
-
     def get_db_manager(self):
         pass
 
