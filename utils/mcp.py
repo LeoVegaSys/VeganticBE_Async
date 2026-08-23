@@ -10,7 +10,7 @@ def get_mcp_details(mcp_config: dict):
     for key, val in mcp_config.items():
         """Get MCP server details"""
         _name = key
-        _server_config = val["server"]
+        _server_config[key] = val["server"]
         """Get MCP executor function details"""
         _func = val["query_function"]
         """Get MCP API key details"""
