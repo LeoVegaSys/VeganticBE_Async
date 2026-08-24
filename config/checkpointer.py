@@ -1,4 +1,5 @@
 CHECKPOINTER_DB="postgres"
+CLEAR_THREAD_CHECKPOINTER=False
 
 # ===============================
 # POSTGRES CHECKPOINTER

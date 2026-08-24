@@ -12,10 +12,11 @@ from langchain_core.runnables import RunnableConfig
 from src.startpoint.state import InputState, OutputState
 from src.traffic.graph import TrafficWorkflowManager
 from src.dip.graph import DipWorkflowManager
-from utils.store import manage_store, add_to_memories, get_ttl_config
+from utils.store import (manage_store, add_to_memories, get_ttl_config,
+clear_store)
 from utils.categorize import route_query
 from utils.context import Context, QueryRequest
-from config.store import REDIS_HOST, REDIS_PORT, STORE_DB
+from config.store import REDIS_HOST, REDIS_PORT, STORE_DB, CLEAR_USER_STORE
 from config.checkpointer import *
 
 async def classify_query(state: dict, runtime: Runtime[Context]) -> str:
@@ -54,7 +55,8 @@ async def call_traffic_graph(state: InputState, runtime: Runtime[Context]):
 async def call_dip_graph(state: InputState, runtime: Runtime[Context]):
     print(f"\ncall_dip_graph :: state :: {state}")
     result = await DipWorkflowManager(
-        rid=state["request_id"], sid=state["session_id"], uid=state["user_id"]
+        rid=state["request_id"], sid=state["session_id"], uid=state["user_id"],
+        source=state["data_source"]
     ).run_dip_agent(
         question=state["question"], summarize=state["summarize"])
         
@@ -107,6 +109,11 @@ class WorkflowManager:
             async with AsyncConnectionPool(conninfo=pg_uri, max_size=20,
                                            kwargs=conn_kwargs) as pool:
                 checkpointer = AsyncPostgresSaver(pool)
+
+                if CLEAR_THREAD_CHECKPOINTER:
+                    await checkpointer.adelete_thread(thread_id=rq.session_id)
+                if CLEAR_USER_STORE:
+                    await clear_store(user_id=rq.user_id)
 
                 app = self.create_workflow().compile(store=store, checkpointer=checkpointer)
                 # app = self.create_workflow().compile(store=store)

@@ -1,4 +1,5 @@
 STORE_DB="redis"
+CLEAR_USER_STORE=False
 
 # ===============================
 # REDIS STORE
