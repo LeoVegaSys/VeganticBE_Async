@@ -22,6 +22,19 @@ class QueryRequest:
         self.request_id = body.get("request_id", f"req_{random.choice(range(REQUESTS))}")
         self.session_id = body.get("session_id", f"sess_{random.choice(range(SESSIONS))}")
         self.user_id = body.get("user_id", f"user_{random.choice(range(USERS))}")
+        self.user_context = body.get("context", {})
+
+    def is_valid(self, body):
+        return True if isinstance(body, dict) else False
+
+
+class SummarizeRequest:
+    def __init__(self, body: Union[dict, None]):
+        if not self.is_valid(body):
+            return None
+        self.request_ids = body.get('request_ids', [])
+        self.session_id = body.get('request_ids', "")
+        self.user_id = body.get('request_ids', "")
 
     def is_valid(self, body):
         return True if isinstance(body, dict) else False

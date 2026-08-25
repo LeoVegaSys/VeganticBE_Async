@@ -39,13 +39,14 @@ async def call_traffic_graph(state: InputState, runtime: Runtime[Context]):
                         summarize=state["summarize"])
 
     _key = f"{state['request_id'].lower()}_{state['session_id'].lower()}_{state['user_id'].lower()}"
+    print(f"MEMORIES KEY :: {_key}")
     # Write question to store
     await add_to_memories(user_id=runtime.context.user_id,
                           param_key="question", data=state["question"],
-                          key=_key)
+                          key=f"{_key}_q")
     # Write result (from fields_to_copy in data) to store
     await add_to_memories(user_id=runtime.context.user_id, param_key="answer",
-                          data=result, key=_key,
+                          data=result, key=f"{_key}_a",
                           fields_to_copy=["sql_query", "summary", "error"])
 
     print(f"\ntrafficGraph :: call_traffic_graph :: result :: {result}")
@@ -61,13 +62,14 @@ async def call_dip_graph(state: InputState, runtime: Runtime[Context]):
         question=state["question"], summarize=state["summarize"])
         
     _key = f"{state['request_id'].lower()}_{state['session_id'].lower()}_{state['user_id'].lower()}"
+    print(f"MEMORIES KEY :: {_key}")
     # Write question to store
     await add_to_memories(user_id=runtime.context.user_id,
                             param_key="question", data=state["question"],
-                            key=_key)
+                            key=f"{_key}_q")
     # Write result (from fields_to_copy in data) to store
     await add_to_memories(user_id=runtime.context.user_id, param_key="answer",
-                            data=result, key=_key,
+                            data=result, key=f"{_key}_a",
                             fields_to_copy=["sql_query", "summary", "error"])
     print(f"\ndipGraph :: call_dip_graph :: result :: {result}")
     return result

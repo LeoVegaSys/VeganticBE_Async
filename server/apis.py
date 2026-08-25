@@ -5,7 +5,8 @@ import aiohttp_cors
 
 from config.server import SERVER_HOST
 from src.startpoint.graph import WorkflowManager
-from utils.context import QueryRequest
+from utils.context import QueryRequest, SummarizeRequest
+from utils.summarization import perform
 
 
 async def handle_query(request):
@@ -14,32 +15,43 @@ async def handle_query(request):
         obj = QueryRequest(body=data)
         if not obj:
             return web.json_response(
-                {"error": "Invalid request structure"},
-                status=400  # Bad Request
-            )
+                {"error": "Invalid request structure"}, status=400)
         res = await WorkflowManager().answer_query(obj)
         payload = orjson.dumps(res).decode("utf-8")
         return web.json_response(payload)
     except json.JSONDecodeError:
-        return web.json_response(
-            {"error": "Invalid JSON"},
-            status=400  # Bad Request
-        )
+        return web.json_response({"error": "Invalid JSON"}, status=400)
     except orjson.JSONEncodeError:
         return web.json_response(
-            {"error": "Unable to load into JSON"},
-            status=500  # Bad Request
-        )
+            {"error": "Unable to load into JSON"}, status=500)
     except Exception as e:
-        return web.json_response(
-            {"error": str(e)},
-            status=500
-            )
+        return web.json_response({"error": str(e)}, status=500)
 
 
 async def handle_feedback(request):
     data = await request.json()
-    return web.json_response({"received": data})
+    return web.json_response({"feedback received": data})
+
+
+async def summarize_chat(request):
+    try:
+        data = await request.json()
+        obj = SummarizeRequest(body=data)
+        if not obj:
+            return web.json_response(
+                {"error": "Invalid request structure"}, status=400)
+        res = await perform(obj)
+        payload = orjson.dumps(res).decode("utf-8")
+        return web.json_response(payload)
+    except json.JSONDecodeError:
+        return web.json_response({"error": "Invalid JSON"}, status=400)
+    except orjson.JSONEncodeError:
+        return web.json_response(
+            {"error": "Unable to load into JSON"}, status=500)
+    except Exception as e:
+        return web.json_response({"error": str(e)}, status=500)
+
+
 
 
 # 3. Setup the Application and Routes
@@ -47,6 +59,7 @@ async def init_app():
     app = web.Application()
     app.add_routes([
         web.post('/ask', handle_query),
+        web.post('/summarize', summarize_chat),
         web.post('/feedback', handle_feedback)
     ])
 
