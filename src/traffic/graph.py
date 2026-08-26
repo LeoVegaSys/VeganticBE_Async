@@ -1,9 +1,12 @@
+from functools import partial
+
 from langgraph.graph import StateGraph, START, END
 from langgraph.types import RetryPolicy
 
 from src.traffic.state import TrafficState, TrafficOutputState
 from src.traffic.agent import TrafficAgent
-from utils.store import add_to_memories
+from utils.store import write_to_store, create_memory_payload
+from config.store import HISTORY
 
 class TrafficWorkflowManager:
     def __init__(self, rid: str, sid: str, uid: str, source: str):
@@ -55,17 +58,16 @@ class TrafficWorkflowManager:
             print(f"NOT SAVING :: {result}")
             return result
 
-        # Creating Base Key
-        _key = f"{self.agent.request_id.lower()}_{self.agent.session_id.lower()}_{self.agent.user_id.lower()}"
-        print(f"MEMORIES KEY :: {_key}")
+        part_payload = partial(
+            create_memory_payload, user_id=self.agent.user_id,
+            session_id=self.agent.session_id, request_id=self.agent.request_id)
         # Write question to store
-        await add_to_memories(user_id=self.agent.user_id,
-                            param_key="question", data=result["question"],
-                            key=f"{_key}_q")
-        # Write result (from fields_to_copy in data) to store
-        await add_to_memories(user_id=self.agent.user_id, param_key="answer",
-                            data=result, key=f"{_key}_a",
-                            fields_to_copy=["sql_query", "summary", "error"])
+        await write_to_store(category=HISTORY, payload=part_payload(
+            param_type="question", data=result["question"]))
+        # Write result (from fields in data) to store
+        await write_to_store(category=HISTORY, payload=part_payload(
+            param_key="answer", data=result,
+            fields=["sql_query", "summary", "error"]))
 
         print(f"\nrun_traffic_agent :: result :: {result}")
         return result

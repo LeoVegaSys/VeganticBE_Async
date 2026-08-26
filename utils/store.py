@@ -6,7 +6,7 @@ from langgraph.store.redis.aio import AsyncRedisStore
 
 from config.store import (KEEP_FIRST_N, KEEP_LAST_N, KEEP_THRESHOLD,
                           REDIS_HOST, REDIS_PORT, REDIS_TTL, STORE_DB, HISTORY,
-                          WARMUP)
+                          WARMUP, USERS)
 from config.llm import OLLAMA_KEEP_ALIVE
 
 REDIS_STORE_URI = f"{STORE_DB}://{REDIS_HOST}:{REDIS_PORT}"
@@ -25,12 +25,13 @@ async def manage_store(user_id: str):
     Check counts of each namespace, Sort by updated_at asc
     Keep first KEEP_FIRST_N and latest KEEP_LAST_N
     """
+    filters = {"user_id": user_id}
     try:
         async with AsyncRedisStore.from_conn_string(REDIS_STORE_URI) as store:
-            namespaces = await store.alist_namespaces(suffix=(user_id,))
+            namespaces = await store.alist_namespaces(suffix=(USERS,))
             for ns in namespaces:
-                results = await store.asearch(ns, limit=KEEP_THRESHOLD)
-                print(f"store :: manage :: UID {user_id} :: NS {ns} :: LEN {len(results)}")
+                results = await store.asearch(ns, filter=filters, limit=KEEP_THRESHOLD)
+                print(f"store manage :UID: {user_id} :NS: {ns} :F: {filters} :LEN: {len(results)}")
                 if len(results) > KEEP_THRESHOLD:
                     r_sorted = sorted(results, key=lambda x: x.updated_at)
                     to_delete = [store.adelete(ns, key=s.key) for s in r_sorted[KEEP_FIRST_N: -KEEP_LAST_N]]
@@ -40,42 +41,16 @@ async def manage_store(user_id: str):
         return False
 
 
-async def write_to_store(user_id: str, category: str, param: str, data: str,
-                         key: str = ""):
-    _key = key or str(uuid4())
+async def write_to_store(category: str, payload: dict):
     try:
         async with AsyncRedisStore.from_conn_string(REDIS_STORE_URI) as store:
             await store.aput(
-                namespace=(category, user_id),
-                key=_key,
-                value={param : data}
+                namespace=(category, USERS),
+                key=str(uuid4()),
+                value=payload
             )
     except Exception as e:
         print(f"Error occurred during store write : {str(e)}")
-
-
-async def add_to_memories(user_id: str, param_key: str, data: dict, key: str,
-                          fields_to_copy: list = []):
-    '''
-    Writes user memories to store
-    Args:
-        user_id : User identifier
-        fields_to_copy : List of keys to be stored as part of data
-        param_key : Key identifier for memory
-        data : input dataset to be stored fully or partially
-    If fields_to_copy is provided, only a subset of result is stored
-    '''
-    # Pull specific key-value pairs from input if required
-    r = {f:data[f] for f in fields_to_copy if f in data} if fields_to_copy \
-        else data
-    # Stringify data for storage
-    try:
-        res = r if isinstance(r, str) else json.dumps(r)
-    except Exception as e:
-        print(f"Store W :: JSON conversion failed for {r} with error {str(e)}")
-        return
-    await write_to_store(user_id=user_id, category=HISTORY, param=param_key, 
-                         data=res, key=key)
 
 
 async def clear_store(user_id: str, category: str = ""):
@@ -83,15 +58,16 @@ async def clear_store(user_id: str, category: str = ""):
     If category is provided, deletes all category records ONLY for user.
     If category is not provided, deletes all store records for ALL categories for user.
     """
+    filters = {"user_id": user_id}
     try:
         async with AsyncRedisStore.from_conn_string(REDIS_STORE_URI) as store:
             if category:
-                namespaces = [(category, user_id)]
+                namespaces = [(category, USERS)]
             else:
-                namespaces = await store.alist_namespaces(suffix=(user_id,))
+                namespaces = await store.alist_namespaces(suffix=(USERS,))
             for ns in namespaces:
-                results = await store.asearch(ns, limit=KEEP_THRESHOLD)
-                print(f"store :: clear :: UID {user_id} :: NS {ns} :: LEN {len(results)}")
+                results = await store.asearch(ns, filter=filters, limit=KEEP_THRESHOLD)
+                print(f"store clear :UID: {user_id} :F: {filters} :NS: {ns} :LEN: {len(results)}")
                 to_delete = [store.adelete(ns, key=r.key) for r in results]
                 await asyncio.gather(*to_delete)
     except Exception as e:
@@ -104,20 +80,17 @@ async def read_from_store(user_id: str, category: str, params: list[str] = []) -
     If params is not provided, Returns all records for the category.
     """
     result_set = []
-    try:
-        async with AsyncRedisStore.from_conn_string(REDIS_STORE_URI) as store:
-            namespace = (category, user_id)
-            results = await store.asearch(namespace, limit=KEEP_THRESHOLD)
-            print(f"store :: read :: UID {user_id} :: NS {namespace} :: LEN {len(results)}")
-            if results:
-                if params:
-                    result_set = [r for r in results for p in params if p in r.value]
-                else:
-                    result_set = [r for r in results]
-            return result_set
-    except Exception as e:
-        print(f"Error occurred during store read : {str(e)}")
-        return []
+    for param in params:
+        filters = {"user_id": user_id, "type": param}
+        try:
+            async with AsyncRedisStore.from_conn_string(REDIS_STORE_URI) as store:
+                namespace = (category, USERS)
+                results = await store.asearch(namespace, filter=filters, limit=KEEP_THRESHOLD)
+                print(f"store read :UID: {user_id} :F: {filters} :NS: {namespace} :LEN: {len(results)}")
+                result_set += results
+        except Exception as e:
+            print(f"Error occurred during store read : {str(e)}")
+    return result_set
 
 
 async def get_conversation_history(user_id: str, params: list[str]) -> list[dict]:
@@ -129,42 +102,18 @@ async def get_conversation_history(user_id: str, params: list[str]) -> list[dict
     return memories
 
 
-async def warmup_done(user_id: str):
-    """Returns True if warmup has been performed in last 30 mins"""
-    from datetime import datetime, timezone
-    warmed_up = False
-    # Check if warmup prompt already loaded
-    warmup_done = await read_from_store(user_id=user_id, category=WARMUP)
-    
-    if warmup_done:
-        # Calculate minutes since last warmup
-        # If time over KEEP_ALIVE, warmup to be performed
-        keep_alive_mins = get_keep_alive_in_mins()
-        last_run = warmup_done[0].updated_at.replace(tzinfo=timezone.utc)
-        mins_since_last_run = ((datetime.now(timezone.utc) - last_run).total_seconds())//60
-        if mins_since_last_run > keep_alive_mins:
-            print(f"Warmup completed for user {user_id} more than {keep_alive_mins} mins ago.")
-        else:
-            print(f"Warmup already completed for user {user_id}.")
-            warmed_up = True
-
-    if not warmed_up:   # CLEAR OLD WARMUP ENTRIES IF ANY
-        print(f"Warmup not completed for user {user_id}.")
-        await clear_store(user_id=user_id, category=WARMUP)
-        await write_to_store(user_id=user_id, category=WARMUP, param="warmup", data="true")
-
-    return warmed_up
-
-
-def get_keep_alive_in_mins():
-    import re
-    units = {'s': 1, 'm': 60, 'h': 3600, 'd': 86400, 'w': 604800}
-    is_alphanum = any(c.isalpha() for c in OLLAMA_KEEP_ALIVE)
-    if is_alphanum:
-        total_seconds = sum(
-            int(value) * units[unit.lower()] 
-            for value, unit in re.findall(r'(\d+)([dhmshw])', OLLAMA_KEEP_ALIVE)
-        )
-        return (total_seconds//60)
-    else:
-        return int(OLLAMA_KEEP_ALIVE)
+def create_memory_payload(param_type: str, user_id: str, session_id: str, 
+                          request_id: str, data: dict, fields: list = []):
+    payload = {}
+    payload["type"] = param_type
+    payload["user"] = user_id
+    payload["session"] = session_id
+    payload["request"] = request_id
+    r = {f:data[f] for f in fields if f in data} if fields else data
+    try:    # Stringify data for storage
+        result = r if isinstance(r, str) else json.dumps(r)
+    except Exception as e:
+        print(f"Store W :: JSON conversion failed for {r} with error {str(e)}")
+        result = None
+    payload["data"] = result
+    return payload

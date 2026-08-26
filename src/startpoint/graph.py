@@ -1,4 +1,5 @@
 from uuid import uuid4
+from functools import partial
 
 from langgraph.store.redis.aio import AsyncRedisStore
 from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
@@ -12,11 +13,12 @@ from langchain_core.runnables import RunnableConfig
 from src.startpoint.state import InputState, OutputState
 from src.traffic.graph import TrafficWorkflowManager
 from src.dip.graph import DipWorkflowManager
-from utils.store import (manage_store, add_to_memories, get_ttl_config,
-clear_store)
+from utils.store import (manage_store, write_to_store, get_ttl_config,
+clear_store, create_memory_payload)
 from utils.categorize import route_query
 from utils.context import Context, QueryRequest
-from config.store import REDIS_HOST, REDIS_PORT, STORE_DB, CLEAR_USER_STORE
+from config.store import (REDIS_HOST, REDIS_PORT, STORE_DB, CLEAR_USER_STORE,
+                          HISTORY)
 from config.checkpointer import *
 
 async def classify_query(state: dict, runtime: Runtime[Context]) -> str:
@@ -49,17 +51,18 @@ async def call_dip_graph(state: InputState, runtime: Runtime[Context]):
         source=state["data_source"]
     ).run_dip_agent(
         question=state["question"], summarize=state["summarize"])
-        
-    _key = f"{state['request_id'].lower()}_{state['session_id'].lower()}_{state['user_id'].lower()}"
-    print(f"MEMORIES KEY :: {_key}")
+
+    part_payload = partial(create_memory_payload, user_id=state['user_id'],
+                           session_id=state["session_id"],
+                           request_id=state["request_id"])
     # Write question to store
-    await add_to_memories(user_id=runtime.context.user_id,
-                            param_key="question", data=state["question"],
-                            key=f"{_key}_q")
-    # Write result (from fields_to_copy in data) to store
-    await add_to_memories(user_id=runtime.context.user_id, param_key="answer",
-                            data=result, key=f"{_key}_a",
-                            fields_to_copy=["sql_query", "summary", "error"])
+    await write_to_store(category=HISTORY, payload=part_payload(
+        param_type="question", data=state["question"]))
+    # Write result (from fields in data) to store
+    await write_to_store(category=HISTORY, payload=part_payload(
+        param_key="answer", data=result, 
+        fields=["sql_query", "summary", "error"]))
+
     print(f"\ndipGraph :: call_dip_graph :: result :: {result}")
     return result
 

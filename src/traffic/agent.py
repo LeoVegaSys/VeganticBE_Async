@@ -97,8 +97,6 @@ class TrafficAgent:
                         "summary": f'Sorry, Please provide additional information. Original question : {state["question"]}'
                         }
                 )
-                # return {"messages": msgs, "sql_query": "NOT_RELEVANT"}
-                # return {"sql_query": "NOT_RELEVANT"}
             else:
                 # return {"messages": msgs, "sql_query": sql_response, "sql_valid": True, "sql_issues": "", "error": ""}
                 return {"sql_query": sql_response, "sql_valid": True, "sql_issues": "", "error": ""}
@@ -149,9 +147,6 @@ class TrafficAgent:
         _error = ""
         if not state["summarize"]:
             return 
-        if state["sql_query"] == "NOT_RELEVANT":
-            return {"summary": f'Sorry, Please provide additional information.\
-                     Original question : {state["question"]}'}
 
         try:
             summary_prompt = summarize_prompt().invoke({
@@ -193,16 +188,6 @@ class TrafficAgent:
         print(f"\ntraffic_agent :: warmup :: UID :: {runtime.context.user_id}")
         intent = intent_tag(state["question"])
 
-        # memory = get_conversation_history(user_id=runtime.context.user_id, 
-        #                                   params=["question", "answer"])
-        # if memory:  # Run only if warmup is not performed
-        #     prompt = get_conversation_prompt(prev_conv=memory) if memory else None
-            # self.llm_manager_rest.call(warmup=True, prompt=prompt)
-        
-        # warmed_up = await warmup_done(user_id=runtime.context.user_id)
-        # if not warmed_up:
-        #     await self.llm_manager.call(warmup=True)
-
         return {
             # "messages" : HumanMessage(content=state["question"]),
             "repairs_left": QA_MAX_REPAIRS, 
@@ -217,8 +202,6 @@ class TrafficAgent:
         self.log.debug(f"\ntraffic_agent :: run_sql :: state :: {state}")
         query = state["sql_query"]
         _lquery = query.lower().lstrip()
-        if query == "NOT_RELEVANT":
-            return {"sql_valid": False}
         
         if not (_lquery.startswith("select") or _lquery.startswith("with")):
             return {

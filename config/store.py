@@ -17,3 +17,4 @@ KEEP_THRESHOLD=16
 # ===============================
 HISTORY="memories"
 WARMUP="warmup"
+USERS="users"
