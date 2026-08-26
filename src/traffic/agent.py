@@ -1,5 +1,6 @@
 import orjson
 
+from langgraph.graph import END
 from langgraph.types import Command
 from langgraph.runtime import Runtime
 from langchain.messages import HumanMessage, SystemMessage, AIMessage, ToolMessage
@@ -87,8 +88,16 @@ class TrafficAgent:
             sql_response = clean_sql(query)
             msgs = [SystemMessage(content=prompt), AIMessage(sql_response)]
             if sql_response.strip() == "NOT_ENOUGH_INFO":
+                print(f"Returning NOT_RELEVANT for NOT_ENOUGH_INFO")
+                return Command(
+                    goto=END,
+                    update={
+                        "sql_query": "NOT_RELEVANT", "sql_valid": False, # "messages": msgs,
+                        "summary": f'Sorry, Please provide additional information. Original question : {state["question"]}'
+                        }
+                )
                 # return {"messages": msgs, "sql_query": "NOT_RELEVANT"}
-                return {"sql_query": "NOT_RELEVANT"}
+                # return {"sql_query": "NOT_RELEVANT"}
             else:
                 # return {"messages": msgs, "sql_query": sql_response, "sql_valid": True, "sql_issues": "", "error": ""}
                 return {"sql_query": sql_response, "sql_valid": True, "sql_issues": "", "error": ""}
