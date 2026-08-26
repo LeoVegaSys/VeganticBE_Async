@@ -80,6 +80,8 @@ class TrafficAgent:
             print(f"\ntraffic_agent :: generate_sql :: do_repair :: {do_repair} :: prompt")
             query = await self.llm_manager.call(prompt=prompt, model=SQL_MODEL,
                                                 temperature=0.0)
+            if isinstance(query, dict):
+                print(f"generate_sql returned DICT {query}")
             if not query:   # Output generation FAILED
                 return {"sql_query": "", "sql_valid": False,
                         "sql_issues": "Query creation failed",

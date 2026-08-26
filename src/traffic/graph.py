@@ -1,10 +1,9 @@
 from langgraph.graph import StateGraph, START, END
 from langgraph.types import RetryPolicy
 
-
 from src.traffic.state import TrafficState, TrafficOutputState
 from src.traffic.agent import TrafficAgent
-
+from utils.store import add_to_memories
 
 class TrafficWorkflowManager:
     def __init__(self, rid: str, sid: str, uid: str, source: str):
@@ -49,5 +48,24 @@ class TrafficWorkflowManager:
         result = await app.ainvoke(
             {"question": question, "summarize": summarize}
         )
+
+        #Saving history
+        if "sql_query" in result and result["sql_query"] in ['NOT_RELEVANT']:
+            # Skipping memory save
+            print(f"NOT SAVING :: {result}")
+            return result
+
+        # Creating Base Key
+        _key = f"{self.agent.request_id.lower()}_{self.agent.session_id.lower()}_{self.agent.user_id.lower()}"
+        print(f"MEMORIES KEY :: {_key}")
+        # Write question to store
+        await add_to_memories(user_id=self.agent.user_id,
+                            param_key="question", data=result["question"],
+                            key=f"{_key}_q")
+        # Write result (from fields_to_copy in data) to store
+        await add_to_memories(user_id=self.agent.user_id, param_key="answer",
+                            data=result, key=f"{_key}_a",
+                            fields_to_copy=["sql_query", "summary", "error"])
+
         print(f"\nrun_traffic_agent :: result :: {result}")
         return result

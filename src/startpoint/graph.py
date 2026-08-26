@@ -38,22 +38,6 @@ async def call_traffic_graph(state: InputState, runtime: Runtime[Context]):
     ).run_traffic_agent(question=state["question"],
                         summarize=state["summarize"])
 
-    if state["sql_query"] in ['NOT_RELEVANT']:  # Skipping memory save
-        print(f"NOT SAVING :: {state}")
-        return result
-
-    # Creating Base Key
-    _key = f"{state['request_id'].lower()}_{state['session_id'].lower()}_{state['user_id'].lower()}"
-    print(f"MEMORIES KEY :: {_key}")
-    # Write question to store
-    await add_to_memories(user_id=runtime.context.user_id,
-                          param_key="question", data=state["question"],
-                          key=f"{_key}_q")
-    # Write result (from fields_to_copy in data) to store
-    await add_to_memories(user_id=runtime.context.user_id, param_key="answer",
-                          data=result, key=f"{_key}_a",
-                          fields_to_copy=["sql_query", "summary", "error"])
-
     print(f"\ntrafficGraph :: call_traffic_graph :: result :: {result}")
     return result
 
