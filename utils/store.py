@@ -44,6 +44,7 @@ async def manage_store(user_id: str):
 async def write_to_store(category: str, payload: dict):
     try:
         async with AsyncRedisStore.from_conn_string(REDIS_STORE_URI) as store:
+            print(f"store write :C: {category} :P: {payload}")
             await store.aput(
                 namespace=(category, USERS),
                 key=str(uuid4()),
@@ -106,9 +107,9 @@ def create_memory_payload(param_type: str, user_id: str, session_id: str,
                           request_id: str, data: dict, fields: list = []):
     payload = {}
     payload["type"] = param_type
-    payload["user"] = user_id
-    payload["session"] = session_id
-    payload["request"] = request_id
+    payload["user_id"] = user_id
+    payload["session_id"] = session_id
+    payload["request_id"] = request_id
     r = {f:data[f] for f in fields if f in data} if fields else data
     try:    # Stringify data for storage
         result = r if isinstance(r, str) else json.dumps(r)

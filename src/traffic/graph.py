@@ -66,7 +66,7 @@ class TrafficWorkflowManager:
             param_type="question", data=result["question"]))
         # Write result (from fields in data) to store
         await write_to_store(category=HISTORY, payload=part_payload(
-            param_key="answer", data=result,
+            param_type="answer", data=result,
             fields=["sql_query", "summary", "error"]))
 
         print(f"\nrun_traffic_agent :: result :: {result}")

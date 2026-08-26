@@ -60,7 +60,7 @@ async def call_dip_graph(state: InputState, runtime: Runtime[Context]):
         param_type="question", data=state["question"]))
     # Write result (from fields in data) to store
     await write_to_store(category=HISTORY, payload=part_payload(
-        param_key="answer", data=result, 
+        param_type="answer", data=result,
         fields=["sql_query", "summary", "error"]))
 
     print(f"\ndipGraph :: call_dip_graph :: result :: {result}")

@@ -62,9 +62,9 @@ def memories_to_chat_msgs(memories: list[dict]) -> list:
     _msgs = []
     if memories:
         for m in memories:
-            for k, v in m.value.items():
-                if k.lower() == "question":
-                    _msgs.append(('human', v))
-                if k.lower() == "answer":
-                    _msgs.append(('ai', v))
+            payload = m.value
+            if payload["type"] == 'question':
+                _msgs.append(('human', payload["data"]))
+            if payload["type"] == "answer":
+                _msgs.append(('ai', payload["data"]))
     return _msgs

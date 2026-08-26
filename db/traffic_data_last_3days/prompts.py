@@ -13,7 +13,7 @@ Valid "LinkType" values: {lts}
 Data time range: {when}
 Use this context: Relevant past information:
 """),
-        ('ai', "{last_conversation}"),
+        ('placeholder', "{last_conversation}"),
         ("human", """Question: {question}"""),
         ('system', """Write ONE {db_type} SQL query that answers the question.
 Return ONLY the SQL — no markdown, no comments, no explanation.
