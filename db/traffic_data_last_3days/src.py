@@ -28,7 +28,7 @@ class TrafficDataLastThreeDays(AbstractDB):
         get_lts_coro = asyncio.create_task(self._get_link_types())
         get_when_coro = asyncio.create_task(self._get_max_min_time())
         get_memories_coro = asyncio.create_task(get_conversation_history(
-            user_id=user_id, params=["question", "answer"]))
+            user_id=user_id, params=["answer"]))
 
         schema = await get_schema_coro
         business_facts = await get_business_coro
@@ -40,7 +40,7 @@ class TrafficDataLastThreeDays(AbstractDB):
             "db_type": db_type, "business_facts": business_facts,
             "table_name": TRAFFIC_TABLE_NAME, "schema": schema,
             "lts": lts, "when": when, "question": question,
-            "conversation_history": memories_to_chat_msgs(memories)
+            "last_conversation": memories_to_chat_msgs(memories)[-1]
         }).to_string()
 
 

@@ -11,12 +11,12 @@ def sql_generate_prompt() -> ChatPromptTemplate:
 {schema}
 Valid "LinkType" values: {lts}
 Data time range: {when}
-Write ONE DuckDB SQL query that answers the question.
-Return ONLY the SQL — no markdown, no comments, no explanation.
-If there is not enough information to write a SQL query, respond with "NOT_ENOUGH_INFO".
 Use this context: Relevant past information:
 """),
-        ('placeholder', "{conversation_history}"),
-        ("human", """Question: {question}""")
+        ('ai', "{last_conversation}"),
+        ("human", """Question: {question}"""),
+        ('system', """Write ONE {db_type} SQL query that answers the question.
+Return ONLY the SQL — no markdown, no comments, no explanation.
+If there is not enough information to write a SQL query, respond with "NOT_ENOUGH_INFO".""")
     ])
     return _prompt
