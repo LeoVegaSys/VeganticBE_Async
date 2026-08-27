@@ -3,6 +3,17 @@ from typing import Union
 
 
 def get_mcp_details(mcp_config: dict):
+    """
+    Parses MCP config
+    Input:
+        mcp_config: dict -> MCP Configuration with additional details
+    Returns:
+        _name: str -> Database type (e.g. mysql, duckdb)
+        _server_config: dict -> MCP Configuration details
+        _func: str -> Database query execution function name
+        _key: str -> Database query execution function parameter name
+        _db: str | None -> Database name to connect to
+    """
     _server_config = {}
     _func = ""
     _key = ""
@@ -15,7 +26,8 @@ def get_mcp_details(mcp_config: dict):
         _func = val["query_function"]
         """Get MCP API key details"""
         _key = val["query_key"]
-    return (_name, _server_config, _func, _key)
+        _db = val["query_db"] if "query_db" in val else None
+    return (_name, _server_config, _func, _key, _db)
 
 def parse_mcp_query_response(mcp_result: Union[list, dict, str, None], tool_name: str = "") -> dict:
     """

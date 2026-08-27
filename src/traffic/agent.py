@@ -5,6 +5,7 @@ from langgraph.types import Command
 from langgraph.runtime import Runtime
 from langchain.messages import HumanMessage, SystemMessage, AIMessage, ToolMessage
 from langchain_core.output_parsers import JsonOutputParser
+from langgraph.types import Overwrite
 
 from managers.models.llm import LLMManager
 from utils.logs import FileLogger
@@ -73,7 +74,7 @@ class TrafficAgent:
         else:
             prompt = await self.data_source.get_sql_generate_prompt(
                 request_id=self.request_id, user_id=self.user_id,
-                question=question
+                question=question, session_id = self.session_id
             )
         try:
             self.log.debug(f"\ntraffic_agent :: generate_sql :: do_repair :: {do_repair} :: prompt :: {prompt}")
@@ -190,6 +191,8 @@ class TrafficAgent:
 
         return {
             # "messages" : HumanMessage(content=state["question"]),
+            "sql_query": Overwrite(value=''),
+            "sql_issues": Overwrite(value=''),
             "repairs_left": QA_MAX_REPAIRS, 
             "intent": intent,
             "chart_intent" : CHART_INTENT_ALIASES.get(intent, intent)

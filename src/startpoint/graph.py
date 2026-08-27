@@ -28,7 +28,8 @@ async def classify_query(state: dict, runtime: Runtime[Context]) -> str:
     ## Set up interrupt-resume cycle below
     #is_approved = interrupt("Do you want to proceed with this action?")
 
-    await manage_store(user_id=runtime.context.user_id)
+    await manage_store(user_id=runtime.context.user_id,
+                       session_id=state["session_id"])
     return route_query(question=state["question"].lower())
 
 

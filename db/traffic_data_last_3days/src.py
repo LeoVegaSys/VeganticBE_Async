@@ -20,7 +20,8 @@ class TrafficDataLastThreeDays(AbstractDB):
         return self.db_manager
 
     async def get_sql_generate_prompt(
-            self, request_id: str, user_id: str, question: str):
+            self, request_id: str, user_id: str, session_id: str,
+            question: str):
         self.request_id = request_id
         db_type = next(iter(MCP_CONFIG))
         get_schema_coro = asyncio.create_task(self._get_schema())
@@ -28,7 +29,7 @@ class TrafficDataLastThreeDays(AbstractDB):
         get_lts_coro = asyncio.create_task(self._get_link_types())
         get_when_coro = asyncio.create_task(self._get_max_min_time())
         get_memories_coro = asyncio.create_task(get_conversation_history(
-            user_id=user_id, params=["answer"]))
+            user_id=user_id, session_id=session_id, params=["answer"]))
 
         schema = await get_schema_coro
         business_facts = await get_business_coro

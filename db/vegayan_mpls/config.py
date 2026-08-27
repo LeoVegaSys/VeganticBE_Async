@@ -1,0 +1,2 @@
+TRAFFIC_DB_NAME="Vegayan_MPLS"
+MCP_DB_TYPE="mysql"

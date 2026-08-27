@@ -1,11 +1,14 @@
 from db.base_class import AbstractDB
 from db.traffic_data_last_3days.src import TrafficDataLastThreeDays
+from db.mpls_traffic_raw.src import MplsTrafficRaw
+from db.vegayan_mpls.src import VegayanMPLS
 
 
 class DBFactory:
     _databases = {
         "traffic_data_last_3days": TrafficDataLastThreeDays,
-        # "mcp_demo": McpDemo
+        "vegayan_mpls": VegayanMPLS,
+        "mpls_traffic_raw": MplsTrafficRaw
     }
 
     @staticmethod

@@ -19,20 +19,20 @@ def get_ttl_config():
 }
 
 
-async def manage_store(user_id: str):
+async def manage_store(user_id: str, session_id: str):
     """
     Clear older records. Store size max KEEP_THRESHOLD
     Check counts of each namespace, Sort by updated_at asc
     Keep first KEEP_FIRST_N and latest KEEP_LAST_N
     """
-    filters = {"user_id": user_id}
+    filters = {"user_id": user_id, "session_id": session_id}
     try:
         async with AsyncRedisStore.from_conn_string(REDIS_STORE_URI) as store:
             namespaces = await store.alist_namespaces(suffix=(USERS,))
             for ns in namespaces:
                 results = await store.asearch(ns, filter=filters, limit=KEEP_THRESHOLD)
                 print(f"store manage :UID: {user_id} :NS: {ns} :F: {filters} :LEN: {len(results)}")
-                if len(results) > KEEP_THRESHOLD:
+                if len(results) > (KEEP_FIRST_N + KEEP_LAST_N):
                     r_sorted = sorted(results, key=lambda x: x.updated_at)
                     to_delete = [store.adelete(ns, key=s.key) for s in r_sorted[KEEP_FIRST_N: -KEEP_LAST_N]]
                     await asyncio.gather(*to_delete)
@@ -75,14 +75,15 @@ async def clear_store(user_id: str, category: str = ""):
         print(f"Error occurred during store clear : {str(e)}")
 
 
-async def read_from_store(user_id: str, category: str, params: list[str] = []) -> list[dict]:
+async def read_from_store(user_id: str, session_id: str, category: str,
+                          params: list[str] = []) -> list[dict]:
     """
     If params is provided, Returns category records matching the list of text params.
     If params is not provided, Returns all records for the category.
     """
     result_set = []
     for param in params:
-        filters = {"user_id": user_id, "type": param}
+        filters = {"user_id": user_id, "session_id": session_id, "type": param}
         try:
             async with AsyncRedisStore.from_conn_string(REDIS_STORE_URI) as store:
                 namespace = (category, USERS)
@@ -94,12 +95,14 @@ async def read_from_store(user_id: str, category: str, params: list[str] = []) -
     return result_set
 
 
-async def get_conversation_history(user_id: str, params: list[str]) -> list[dict]:
+async def get_conversation_history(user_id: str, session_id: str,
+                                   params: list[str]) -> list[dict]:
     """
     Returns previous user conversations 
     """
     # if not warmup_done(user_id):
-    memories = await read_from_store(user_id=user_id, category=HISTORY, params=params)
+    memories = await read_from_store(user_id=user_id, session_id=session_id,
+                                     category=HISTORY, params=params)
     return memories
 
 
