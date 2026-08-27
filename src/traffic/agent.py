@@ -5,7 +5,6 @@ from langgraph.types import Command
 from langgraph.runtime import Runtime
 from langchain.messages import HumanMessage, SystemMessage, AIMessage, ToolMessage
 from langchain_core.output_parsers import JsonOutputParser
-from langgraph.types import Overwrite
 
 from managers.models.llm import LLMManager
 from utils.logs import FileLogger
@@ -148,7 +147,8 @@ class TrafficAgent:
         _error = ""
         if not state["summarize"]:
             return 
-
+        if state["sql_query"] == "NOT_RELEVANT":
+            return {"summary": f'Sorry, Please provide additional information. Original question : {state["question"]}'}
         try:
             summary_prompt = summarize_prompt().invoke({
                 "question": state["question"],
@@ -191,8 +191,8 @@ class TrafficAgent:
 
         return {
             # "messages" : HumanMessage(content=state["question"]),
-            "sql_query": Overwrite(value=''),
-            "sql_issues": Overwrite(value=''),
+            "sql_query": '',
+            "sql_issues": '',
             "repairs_left": QA_MAX_REPAIRS, 
             "intent": intent,
             "chart_intent" : CHART_INTENT_ALIASES.get(intent, intent)
@@ -205,6 +205,8 @@ class TrafficAgent:
         self.log.debug(f"\ntraffic_agent :: run_sql :: state :: {state}")
         query = state["sql_query"]
         _lquery = query.lower().lstrip()
+        if query == "NOT_RELEVANT":
+            return {"sql_valid": False}
         
         if not (_lquery.startswith("select") or _lquery.startswith("with")):
             return {
