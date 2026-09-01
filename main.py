@@ -1,9 +1,5 @@
-import os
-import sys
-import json
 import argparse
 
-from config.mcp import MCP_DB_PATH, MCP_DB_TYPE
 from config.server import SERVER_PORT
 from server.apis import serve
 
