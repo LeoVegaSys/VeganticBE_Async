@@ -30,9 +30,12 @@ class DatabaseManager:
                 tools = await load_mcp_tools(session)
                 run_tool = next(t for t in tools if t.name==mcp_obj.func)
                 tool_params[mcp_obj.key] = query
-                tool_params["database"] = mcp_obj.db_name
-                tool_params["host"] = mcp_obj.host
-                tool_params["port"] = mcp_obj.port
+                if mcp_obj.db_name:
+                    tool_params["database"] = mcp_obj.db_name
+                if mcp_obj.host:
+                    tool_params["host"] = mcp_obj.host
+                if mcp_obj.port:
+                    tool_params["port"] = mcp_obj.port
                 print(f"DBM :: tool called :: {run_tool.name} :: params :: {tool_params}")
                 result = await run_tool.ainvoke(tool_params)
                 print(f"\nDBM :: _execute_query :: Result: {result}")

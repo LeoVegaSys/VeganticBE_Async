@@ -81,3 +81,4 @@ class MCPConfigParser:
             self.db_name = val["query_db"] if "query_db" in val else None
             self.host = val["query_host"] if "query_host" in val else None
             self.port = val["query_port"] if "query_port" in val else None
+        return self
