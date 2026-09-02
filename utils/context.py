@@ -38,3 +38,46 @@ class SummarizeRequest:
 
     def is_valid(self, body):
         return True if isinstance(body, dict) else False
+
+
+class MCPConfigParser:
+    """
+    Parses MCP config
+    Input:
+        mcp_config: dict -> MCP Configuration with additional details
+    Returns:
+        name: str -> Database type (e.g. mysql, duckdb)
+        config: dict -> MCP Configuration details
+        func: str -> Database query execution function name
+        key: str -> Database query execution function parameter name
+        db_name: str | None -> Database name to connect to
+        host: str | None -> Database Host to connect to
+        port: int -> Database Port to connect to
+    """
+    def __init__(self, mcp_input: dict):
+        self.body = mcp_input
+        if not self.is_valid():
+            return None
+        self.name = None
+        self.config = {}
+        self.func = None
+        self.key = None
+        self.db_name = None
+        self.host = None
+        self.port = 0
+
+    def is_valid(self):
+        return True if isinstance(self.body, dict) else False
+
+    def get_mcp_details(self):
+        for key, val in self.body.items():
+            self.name = key
+            """Get MCP server details"""
+            self.config[key] = val["server"]
+            """Get MCP executor function details"""
+            self.func = val["query_function"]
+            """Get MCP API key details"""
+            self.key = val["query_key"]
+            self.db_name = val["query_db"] if "query_db" in val else None
+            self.host = val["query_host"] if "query_host" in val else None
+            self.port = val["query_port"] if "query_port" in val else None
