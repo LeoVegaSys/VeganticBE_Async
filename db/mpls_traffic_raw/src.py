@@ -8,6 +8,7 @@ from db.base_class import AbstractDB
 from db.mpls_traffic_raw.config import TRAFFIC_TABLE_NAME
 from db.mpls_traffic_raw.mcp import MCP_CONFIG
 from db.mpls_traffic_raw.skills import get_business
+from db.mpls_traffic_raw.schema import get_schema
 from db.mpls_traffic_raw.prompts import sql_generate_prompt
 from db.manager import DatabaseManager
 
@@ -24,7 +25,7 @@ class MplsTrafficRaw(AbstractDB):
             question: str):
         self.request_id = request_id
         db_type = next(iter(MCP_CONFIG))
-        get_schema_coro = asyncio.create_task(self._get_schema())
+        get_schema_coro = asyncio.create_task(get_schema())
         get_business_coro = asyncio.create_task(get_business())
         get_memories_coro = asyncio.create_task(get_conversation_history(
             user_id=user_id, session_id=session_id, params=["answer"]))

@@ -125,7 +125,7 @@ Is the data live or historical? Static Information
 2. Columns
 Column name     Data type       What it means   Unit / Format   Example value   Other names people call it      Can it be NULL? If so, what does empty mean?
 NodeName        VARCHAR(120)    Name of the network node.       Text    PUN-PE-001      Node Name, Hostname     Yes. Empty means node name is not available.
-NodeId  VARCHAR(20)     Unique identifier(Node IP) of the network node. It is the primary key of the table.     Text / Node identifier     1001406 Node ID, Node IP        No.
+NodeId  VARCHAR(20)     Unique identifier(Node IP) of the network node. It is the primary key of the table.     Text / Node identifier  1001406 Node ID, Node IP     No.
 vendorName      VARCHAR(20)     Vendor associated with the network node.        Text    Cisco   Vendor, Vendor Name     Yes. Vendor information is not available.
 City    VARCHAR(40)     City associated with the network node.  Text    Pune    Node City, City Yes. City information is not available.
 state   VARCHAR(40)     State associated with the network node. Text    Maharashtra     State, Node State       Yes. State information is not available.
@@ -159,30 +159,29 @@ AM6code VARCHAR(100)    M6 code associated with the A-End node. Text/Code       
 ZM6code VARCHAR(100)    M6 code associated with the Z-End node. Text/Code       M6YYYY  Z-End M6 Code   Yes — Z-End M6 code not available
 VendorName      VARCHAR(20)     Vendor associated with the network equipment/interface. Text    Cisco   Vendor  No
 ANodeNumber     SMALLINT UNSIGNED       Internal node reference for the A-End node.     Integer 101     A-End Node Number       No
-ANodeID VARCHAR(15)     Router IP address/identifier of the A-End node. IPv4/text       10.10.10.1      A-End Router IP, A-End Node ID     No
+ANodeID VARCHAR(15)     Router IP address/identifier of the A-End node. IPv4/text       10.10.10.1      A-End Router IP, A-End Node ID  No
 ANodeName       VARCHAR(128)    Name/hostname of the A-End router.      Text    PUNE-PE-01      A-End Router Name, Hostname     No
 AIfID   INT UNSIGNED    Internal interface identifier of the A-End interface.   Integer 12345   A-End Interface ID      No
-AIfDescr        VARCHAR(128)    Interface description/name of the A-End interface.      Text    GigabitEthernet0/0/0    A-End Interface, A-End IfDescr     No
-APortID BIGINT UNSIGNED VLAN port identifier associated with the A-End interface.       Integer 1001406 A-End Port ID, A-End VLAN Port ID  No
+AIfDescr        VARCHAR(128)    Interface description/name of the A-End interface.      Text    GigabitEthernet0/0/0    A-End Interface, A-End IfDescr  No
+APortID BIGINT UNSIGNED VLAN port identifier associated with the A-End interface.       Integer 1001406 A-End Port ID, A-End VLAN Port ID       No
 ZNodeNumber     SMALLINT UNSIGNED       Internal node reference for the Z-End node.     Integer 102     Z-End Node Number       Yes — Z-End node reference not available
-ZNodeID VARCHAR(15)     Router IP address/identifier of the Z-End node. IPv4/text       10.10.10.2      Z-End Router IP, Z-End Node ID     Yes – Z End Node ID not available
+ZNodeID VARCHAR(15)     Router IP address/identifier of the Z-End node. IPv4/text       10.10.10.2      Z-End Router IP, Z-End Node ID  Yes – Z End Node ID not available
 ZNodeName       VARCHAR(128)    Name/hostname of the Z-End router.      Text    MUM-PE-01       Z-End Router Name, Hostname     Yes — Z-End node name not available
 ZIfID   INT UNSIGNED    Internal interface identifier of the Z-End interface.   Integer 12346   Z-End Interface ID      Yes — Z-End interface reference not available
-ZIfDescr        VARCHAR(128)    Interface description/name of the Z-End interface.      Text    GigabitEthernet0/0/1    Z-End Interface, Z-End IfDescr     Yes — Z-End interface description not available
-ZPortID BIGINT UNSIGNED VLAN port identifier associated with the Z-End interface.       Integer 1001407 Z-End Port ID, Z-End VLAN Port ID  Yes — Z-End port reference not available
+ZIfDescr        VARCHAR(128)    Interface description/name of the Z-End interface.      Text    GigabitEthernet0/0/1    Z-End Interface, Z-End IfDescr  Yes — Z-End interface description not available
+ZPortID BIGINT UNSIGNED VLAN port identifier associated with the Z-End interface.       Integer 1001407 Z-End Port ID, Z-End VLAN Port ID       Yes — Z-End port reference not available
 IfAdminStatus   ENUM    Administrative state configured for the interface.      up, down, testing       up      Admin Status    No
-IfOperStatus    ENUM    Current operational state of the interface.     up, down, testing, unknown, dormant, notpresent, lowerLayerDown    up      Operational Status, Oper Status No
+IfOperStatus    ENUM    Current operational state of the interface.     up, down, testing, unknown, dormant, notpresent, lowerLayerDown up      Operational Status, Oper Status      No
 Class   VARCHAR(4)      Classification associated with the interface for polling/processing.    Text    B,C,E,F Interface Class No
 IfSpeed BIGINT UNSIGNED Configured bandwidth/speed of the interface.    Kb      10000000        Interface Speed, Bandwidth      No
-LinkType        VARCHAR(100)    Category/type of the network link.      Text    Domestic Backbone, International Peering, T4-Ring, MPLS-CEN-NNI    Link Type, Category, InterfaceType      No – It can be OTHERS
+LinkType        VARCHAR(100)    Category/type of the network link.      Text    Domestic Backbone, International Peering, T4-Ring, MPLS-CEN-NNI Link Type, Category, InterfaceType   No – It can be OTHERS
 LinkSubType     VARCHAR(30)     More specific classification of the link type.  Text    P2P     Link Sub-Type   Yes — link subtype not available
 RingName        VARCHAR(100)    Name identifying the ring topology associated with the link.    Text    RING-PUNE-01    Ring    Yes — ring information not available
-ParentIfID      INT UNSIGNED    Identifier of the parent interface associated with the interface.       Integer 12300   Parent Interface ID        Yes — parent interface not available
+ParentIfID      INT UNSIGNED    Identifier of the parent interface associated with the interface.       Integer 12300   Parent Interface ID     Yes — parent interface not available
 ParentIfDescr   VARCHAR(128)    Description/name of the parent interface.       Text    Bundle-Ether10  Parent Interface        Yes — parent interface description not available
-Flag    VARCHAR(20)     Classification flag associated with the interface.      Text    Bundle / Physical/Logical/ Bundle with dotInterface Flag   No – it can be NA
-IfAlias VARCHAR(1024)   Description/alias configured for the interface. Text    Link to Mumbai PE       Interface Alias, Interface Description     No
+Flag    VARCHAR(20)     Classification flag associated with the interface.      Text    Bundle / Physical/Logical/ Bundle with dot      Interface Flag  No – it can be NA
+IfAlias VARCHAR(1024)   Description/alias configured for the interface. Text    Link to Mumbai PE       Interface Alias, Interface Description  No
 AIfIndex        INT UNSIGNED    Logical interface index of the A-End interface. Integer 123     A-End IfIndex, Interface Index  No
-
 
 
 Conditions
@@ -197,42 +196,5 @@ If the updatetime of the interface is latest then its live/active interface
 3. NODEANDIF_STATIC_TBL
 Dont consider Z end details in every query
 
-LinkType Assignment Conditions for NODEANDIF_STATIC_TBL for MPLS/ISP/T4/T5 Domains are below:
-Category        Keywords
-Carrier NNI     Interface Description should contain '#CARRIER'
-CMN-VOLTE       Interface Description should contain 'CMNLD-' or Interface Description should contain 'NLDN-ML3' or Interface Description should contain 'ANGN-ML3' or Interface Description should contain '-NGN-'
-DOMESTIC BACKBONE       Interface Description should contain 'AES' and Interface Description not should contain 'AESI-IN' and Interface Description should contain 'DEST' and Interface Description not should contain 'ML3-' and Interface Description not should contain 'ML2-' and Interface Description not should contain '-ILP-' For Destination Information: DEST-<NodeName$InterfaceName>
-DOMESTIC BACKTOBACK     Interface Description should contain 'BACK-TO-BACK'  AND Interface Description should  not contain 'ML3-' and Interface Description should not contain 'ML2-' and Interface Description should not contain '-ILP-' For Destination Infomration: CONNECTED-TO-$NodeName$-$InterfaceName$
-DOMESTIC TRUNK  Interface Description should contain 'TRUNK' AND Interface Description should not contain 'ML3-' and Interface Description should not contain 'ML2-' and Interface Description should not contain '-ILP-' For Destination Infomration: CONNECTED-TO-$NodeName$-$InterfaceName$
-HIGH CAP        Interface Description should contain  '#INFRA-LINK#PRIM-NNI-EPT-CUST#HIGH-CAP#' or Interface Description should contain '#INFRA-LINK#SEC-NNI-EPT-CUST#HIGH-CAP#'
-ILD-NNI Interface Description should contain '# ILD NNI #'
-INTERNATIONAL BACKBONE  Interface Description should contain 'AESI-IN' or 'BING-IN' or 'BIEU-IN' or 'BING-P2P' or 'AESV-IN' or 'ANGN-IN' and 'DEST' and Interface Description should not contain 'ML2-' and 'ML3-' and Interface Description should not contain '-ILP-' For Dest Information: DEST-<NodeName$InterfaceName>
-INTERNATIONAL BACKTOBACK        Interface  Description should contain 'INT-BACK-TO-BACK'  AND Interface  Description should not contain 'ML3-' and Interface Description should not contain 'ML2-' and Interface  Description should not contain '-ILP-' For Destination Infomration: CONNECTED-TO-$NodeName$-$InterfaceName$
-INTERNATIONAL TRUNK     Interface Description should contain 'INT-TRUNK'  AND  Interface Description not should contain 'ML3-' and Interface Description not should contain 'ML2-' and Interface Description not should contain '-ILP-' For Destination Infomration: CONNECTED-TO-$NodeName$-$InterfaceName$
-ISP Mobility    Interface Description should contain '#PACO-INTERNET-LTE'
-ISP Telemedia   Interface Description should contain '#TELEMEDIA#'
-ISP-B2B-NNI     NodeName should contain '-ISP-' and Interface Description should contain 'NNI-EPT' or Interface Description should contain 'NNI-NPT' or Interface Description should contain 'NNI-CEN'
-LOW CAP Interface Description should contain '#INFRA-LINK#PRIM-NNI-EPT-CUST#LOW-CAP#' or  Interface Description should contain '#INFRA-LINK#SEC-NNI-EPT-CUST#LOW-CAP#'
-LTE TRUNK       Interface Interface Description should contain '-LTE-TRUNK-'
-Mobility-Core (MPLS)    Interface Description should contain 'BMLH-ML3-' or Interface Description should contain 'BCLR-ML3-' or Interface Description should contain 'BCLD-ML3-' or Interface Description should contain 'BCLA-ML3-' or Interface Description should contain 'BNLS-ML3-' or Interface Description should contain 'BCLB-ML3-' or Interface Description should contain 'BCJK-ML3-' or Interface Description should contain 'BMLB-ML3-' or Interface Description should contain 'BCLE-ML3-' or Interface Description should contain 'BCLM-ML3-' or Interface Description should contain 'BCLN-ML3-' or Interface Description should contain 'BCLI-ML3-' or Interface Description should contain 'BACLA-ML3-' or Interface Description should contain 'BCLO-ML3-' or Interface Description should contain 'BMLM-ML3-' or Interface Description should contain 'BCLJ-ML3-' or Interface Description should contain 'BCLC-ML3-' or Interface Description should contain 'BCLL-ML3-' or Interface Description should contain 'BCLT-ML3-' or Interface Description should contain 'BALWB-ML3-' or Interface Description should contain 'BCLK-ML3-' or Interface Description should contain 'VOLTE-ML3-' or Interface Description should contain 'PACO-ML3' or Interface Description should contain 'GEOD-ML3' or Interface Description should contain 'GHEC-ML3' or Interface Description should contain 'MPLS-LTE-PACO'
-Mobility-RAN (MPLS)     Interface Description should contain 'MWRAP-ML3-' and Interface Description should contain 'MWRBJ-ML3-' and Interface Description should contain 'MWRDN-ML3-' and Interface Description should contain 'MWRGJ-ML3-' and Interface Description should contain 'MWRHP-ML3-' and Interface Description should contain 'MWRHR-ML3-' and Interface Description should contain 'MWRJK-ML3-' and Interface Description should contain 'MWRKT-ML3-' and Interface Description should contain 'MWRKE-ML3-' and Interface Description should contain 'MWRMG-ML3-' and Interface Description should contain 'MWRMU-ML3-' and Interface Description should contain 'MWRMP-ML3-' and Interface Description should contain 'MWRNE-ML3-' and Interface Description should contain 'MWROR-ML3-' and Interface Description should contain 'MWRPU-ML3-' and Interface Description should contain 'MWRRJ-ML3-' and Interface Description should contain 'MWRTN-ML3-' and Interface Description should contain 'MWRUE-ML3-' and Interface Description should contain 'MWRUW-ML3-' and Interface Description should contain 'MWRWB-ML3-'
-MPLS-CEN-NNI B2B        NodeName should contain '-MPL-' and Interface Description should contain 'NNI-CEN' and Interface Description should not contain 'TELEMEDIA' and Interface Description should not contain '#MPLS-CEN-MOB-NNI#'
-MPLS-CEN-NNI Mobility   NodeName should contain '-MPL-' and Interface Description should contain '#MPLS-CEN-MOB-NNI#'
-MPLS-CEN-NNI Telemedia  NodeName should contain '-MPL-' and Interface Description should contain 'NNI-CEN' and Interface Description should contain 'TELEMEDIA' and Interface Description should not contain '#MPLS-CEN-MOB-NNI#'
-MPLS-EPT-NPT-NNI 2G3G   Nodename should contain '-MPL-' and Interface Description should contain '2G3G-TRUNK'
-MPLS-EPT-NPT-NNI 4G     Nodename should contain '-MPL-' and Interface Description should contain 'LTE-TRUNK' and Interface Description should not contain '2G3G-TRUNK'
-MPLS-EPT-NPT-NNI B2B    Nodename should contain '-MPL-' and Interface Description should contain 'NNI-EPT' or Interface Description should contain 'NNI-NPT' and Interface Description should not contain 'LTE-TRUNK' and Interface Description should not contain '2G3G-TRUNK'
-MPLS-ISP-NNI INTERNET-OVER-MPLS Interface Description should contain 'PEERING<INTERNET-OVER-MPLS>'
-MPLS-ISP-NNI MPLS-ISP   Interface Description should contain 'MPLS-ISP-INFRA-NNI' and Interface Description should not contain 'PEERING<INTERNET-OVER-MPLS>'
-MPLS_CEN_MOB_NNI        Interface Description should contain '#MPLS-CEN-MOB-NNI#'
-PEERING Interface Description should have PEERING Keyword followed by <Peering Scope><Region><Peering Type><Peering Partner> Peering Scope can be DOMESTIC/INTERNATIONAL/INTERNET-OVER-MPLS ; Region can be ASIS,US-WEST,US-EAST etc. ; Peering Type can be CACHE,PRIVATE,TRANSIT,EXCHANGE etc. and Peering Partners can be GOOGLE,FACEBOOK etc.
-Peyto-LTE-ConnectingInterfaces  Interface Description should contain 'T4-CR' or Interface Description should contain 'T4-NR' or Interface Description should contain 'NCS55'
-T3 POP  Interface Description should contain '#INFRA-LINK#PRIM-NNI-EPT-CUST#T3-PoP#' or Interface Description should contain '#INFRA-LINK#SEC-NNI-EPT-CUST#T3-PoP#'
-T4 DROPNODE     Interface Description should begin with '_ _ _#RE'
-T4 INTRACITY    Interface Description should contain '_CNCS55A2' or Interface Description should contain 'CNCS57C3'
-T4-EPT-NPT-NNI  Interface Description should contain 'NNI_NPT' or Interface Description should contain 'NNI_EPT' and NodeIP should start from 116.119
-T4-Ring Interface Description should contain ':' on/before 10th position followed by ANodeName_ZNodename and Interface Description should contain 'IL' or Interface Description should contain 'PL' before ':'
-T5-Ring Interface Description should begin with '_ _ _4PO' or Interface Description should begin with '_ _ _4PL' or Interface Description should begin with '_ _ _4PS' or Interface Description should begin with 'DR_ _ _4PO' or Interface Description should begin with 'DR_ _ _4PL' or Interface Description should begin with 'DR_ _ _4PS' or Interface Description should begin with '_ _ _8ES' or Interface Description should begin with '_ _ _8PL' or Interface Description should begin with '_ _ _8CL' or Interface Description should begin with '_ _ _8CO' or Interface Description should begin with '_ _ _8EO' or Interface Description should begin with 'DR_ _ _8PL' or Interface Description should begin with 'DR_ _ _8CL' or Interface Description should begin with 'DR_ _ _8EL'
-Telemedia (MPLS)        Interface Description should contain 'ABTS-ML3-' or Interface Description should contain 'ABTS-ML2-'
-Unidentified NNI        Interface Description should contain 'NNI' or Interface Description should  not contain 'planning' or Interface Description should not contain 'reserved'
+Don't Hallucinate or make up facts ask the user for more information whenever it is not clear .
 """

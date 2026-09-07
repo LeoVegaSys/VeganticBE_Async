@@ -154,3 +154,27 @@ It is a mapping of the models against their respective ports
 
 WORKING WITH GPUs
 ## Reference : https://oneuptime.com/blog/post/2026-03-18-run-nvidia-gpu-containers-podman/view
+
+
+
+
+PODMAN CREATE COMMANDS
+podman run -d --name redis-stack --memory 1g --memory-reservation 500m -p 6380:6379 -p 8001:8001 -v ./user_store/redis/storage:/data:Z redis/redis-stack
+
+podman run -d --name pg-chkptr --memory 1g --memory-reservation 500m -p 5433:5432 -e POSTGRES_USER=checkpointer -e POSTGRES_PASSWORD=checkpointer -e POSTGRES_DB=checkpointer -v ./session_memory/postgres/storage:/var/lib/postgresql/data:Z docker.io/library/postgres:16
+
+
+podman run -d --name ollama-gpu-pod -e OLLAMA_NUM_PARALLEL=4 -e OLLAMA_MAX_LOADED_MODELS=1 -e OLLAMA_MAX_QUEUE=16 --cdi-spec-dir=/home/Vegayan2/.config/cdi --security-opt=label=disable --device nvidia.com/gpu=all --memory 15g --memory-reservation 10g -p 11437:11434 -v /var/lib/ollama/storage_pods/1:/root/.ollama:Z docker.io/ollama/ollama:latest
+
+podman run -d --name ollama-gpu-pod-1 -e OLLAMA_NUM_PARALLEL=4 -e OLLAMA_MAX_LOADED_MODELS=1 -e OLLAMA_MAX_QUEUE=16 --cdi-spec-dir=/home/Vegayan2/.config/cdi --security-opt=label=disable --device nvidia.com/gpu=all --memory 15g --memory-reservation 10g -p 11438:11434 -v /var/lib/ollama/storage_pods/2:/root/.ollama:Z docker.io/ollama/ollama:latest
+
+podman run -d --name ollama-gpu-pod-2 -e OLLAMA_NUM_PARALLEL=2 -e OLLAMA_MAX_LOADED_MODELS=2 -e OLLAMA_MAX_QUEUE=16 --cdi-spec-dir=/home/Vegayan2/.config/cdi --security-opt=label=disable --device nvidia.com/gpu=all --memory 15g --memory-reservation 10g -p 11436:11434 -v /var/lib/ollama/storage:/root/.ollama:z docker.io/ollama/ollama:latest
+
+podman run -d --name ollama-gpu-pod-3 -e OLLAMA_NUM_PARALLEL=2 -e OLLAMA_MAX_LOADED_MODELS=2 -e OLLAMA_MAX_QUEUE=16 --cdi-spec-dir=/home/Vegayan2/.config/cdi --security-opt=label=disable --device nvidia.com/gpu=all --memory 15g --memory-reservation 10g -p 11435:11434 -v /var/lib/ollama/storage:/root/.ollama:z docker.io/ollama/ollama:latest
+
+podman run -d --name ollama-gpu-pod-4 -e OLLAMA_NUM_PARALLEL=2 -e OLLAMA_MAX_LOADED_MODELS=2 -e OLLAMA_MAX_QUEUE=16 --cdi-spec-dir=/home/Vegayan2/.config/cdi --security-opt=label=disable --device nvidia.com/gpu=all --memory 15g --memory-reservation 10g -p 11439:11434 -v /var/lib/ollama/storage:/root/.ollama:z docker.io/ollama/ollama:latest
+
+
+podman run -d --name qdrant-cpu -p 6335:6333 -p 6336:6334 -v /var/lib/ollama/qdrant/storage/cpu:/qdrant/storage:Z docker.io/qdrant/qdrant:latest
+
+podman run -d --name qdrant-gpu --device nvidia.com/gpu=all --security-opt=label=disable -v /var/lib/ollama/qdrant/storage/gpu:/qdrant/storage:Z -p 6337:6333 -p 6338:6334 -e QDRANT__GPU__INDEXING=1 qdrant/qdrant:gpu-nvidia-latest
