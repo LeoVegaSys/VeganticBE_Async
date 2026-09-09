@@ -58,7 +58,14 @@ def parse_mcp_query_response(mcp_result: Union[list, dict, str, None], tool_name
     try:
         result = json.loads(mcp_result[0]['text'])
         tool_id = mcp_result[0]['id']
-        data = [{c: (str(v) if hasattr(v, "isoformat") else v) for c, v in zip(result["columns"], r)} for r in result["rows"]]
+
+        if any(isinstance(r, list) for r in result["rows"]):
+            #If result rows are in list form [value1, value2, value3], add columns as keys
+            data = [{c: (str(v) if hasattr(v, "isoformat") else v) for c, v in zip(result["columns"], r)} for r in result["rows"]]
+        else:
+            #If result rows are in dict form {column: value}
+            data = result["rows"]
+
         result["data"] = data
         result['tool_id'] = tool_id
         result['tool_name'] = tool_name
