@@ -43,8 +43,14 @@ class LLMManager:
         req_json["prompt"] = prompt if prompt else "ok"
         req_json["stream"] = stream if stream else self._stream
         req_json["keep_alive"] = keep_alive if keep_alive else self._keep_alive
+        req_json["think"] = False
+        req_json["options"] = {}
         if temperature:
-            req_json["temperature"] = temperature
+            req_json["options"]["temperature"] = temperature
+        if CONTEXT_LEN:
+            req_json["options"]["num_ctx"] = CONTEXT_LEN
+        if PREDICT_LEN:
+            req_json["options"]["num_predict"] = PREDICT_LEN
 
         try:
             async with aiohttp.ClientSession() as session:
@@ -76,10 +82,10 @@ class LLMManager:
     def log_llm_metrics(self, response: dict):
         """
         Sample input:
-        {'model': 'llama3.2:3b', 'created_at': '2026-09-09T06:55:42.307003949Z', 
-         'response': "['AP', 'MPCG', 'MUM', 'TN']", 'done': True, 'done_reason': 'stop', 
+        {'model': 'llama3.2:3b', 'created_at': '2026-09-09T06:55:42.307003949Z',
+         'response': "['AP', 'MPCG', 'MUM', 'TN']", 'done': True, 'done_reason': 'stop',
          'context': [128006, 9125, 128007, 271, 38766, 1303, 33025, 2696, 25, 6790, 220, 2366, 18, 271, 128009, 128006, 882, 128007, 271, 2374, 25, 1472, 527, 264, 60505, 5782, 34, 1121, 29385, 3213, 382, 16533, 279, 14194, 91022, 1701, 27785, 279, 29636, 627, 12, 2893, 64694, 11, 5933, 11, 323, 6089, 9959, 627, 12, 86248, 3062, 15086, 11, 2819, 11, 17150, 11, 36595, 11, 477, 18845, 627, 12, 5560, 8475, 8316, 26, 5625, 735, 32280, 311, 80575, 16169, 32280, 994, 5505, 627, 12, 23497, 50549, 871, 1041, 4, 439, 264, 4461, 51451, 7826, 54, 4360, 627, 12, 3234, 539, 10552, 8029, 477, 13454, 279, 2539, 1121, 627, 12, 15037, 17459, 7554, 2038, 627, 12, 1442, 279, 1121, 4250, 4320, 279, 3488, 11, 1614, 1148, 374, 7554, 382, 6584, 91022, 25, 1160, 682, 12960, 5144, 198, 34, 49870, 25, 2570, 26264, 4532, 14430, 25, 62853, 26264, 3332, 2599, 37609, 26264, 3332, 44, 4977, 38, 37609, 26264, 3332, 44, 2864, 37609, 26264, 3332, 30271, 9388, 933, 128009, 128006, 78191, 128007, 271, 681, 2599, 518, 364, 44, 4977, 38, 518, 364, 44, 2864, 518, 364, 30271, 663], 
-         'total_duration': 1956388744, 'load_duration': 1710526550, 'prompt_eval_count': 167, 
+         'total_duration': 1956388744, 'load_duration': 1710526550, 'prompt_eval_count': 167,
          'prompt_eval_duration': 70318000, 'eval_count': 16, 'eval_duration': 173623000}
         """
         try:
@@ -93,10 +99,7 @@ class LLMManager:
             model = response['model']
             cre_t = response['created_at']
 
-            log_msg = f"{cre_t} : Model {model} responded with {eval_c} tokens \
-            for {prt_eval_c} prompt tokens. Completed in {total_d}s, loaded \
-            in {load_d}s, prompt evaluated in {prt_eval_d}s and result \
-            evaluated in {eval_d}s"
+            log_msg = f"{cre_t} : Model {model} responded with {eval_c} tokens for {prt_eval_c} prompt tokens. Completed in {total_d}s, loaded in {load_d}s, prompt evaluated in {prt_eval_d}s and result evaluated in {eval_d}s"
             self.log.debug(log_msg)
 
         except Exception as e:
