@@ -16,8 +16,8 @@ class QueryRequest:
             return None
         self.question = body.get("question", "").strip()
         self.user_response = body.get("user_response", "").strip()
-        _no_summary = body.get("no_summary", False)
-        self.summarize = not body.get("summarize", _no_summary)
+        _no_summary = not body.get("no_summary", False)
+        self.summarize = body.get("summarize", _no_summary)
         self.request_id = body.get("request_id", f"req_{random.choice(range(REQUESTS))}")
         self.user_context = body.get("context", {})
         self.session_id = body.get("context", {}).get("session_id", f"sess_{random.choice(range(SESSIONS))}")
