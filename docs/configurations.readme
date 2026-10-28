@@ -1,0 +1,114 @@
+# ======================================================================
+# CHECKPOINTER CONFIG
+# ======================================================================
+CHECKPOINTER_DB : string : Database Type used for checkpointer (e.g. postgres, redis)
+CLEAR_THREAD_CHECKPOINTER : bool : Flag to clear past checkpointer storage on app startup
+PG_HOST : string : Checkpointer Database Hostname
+PG_PORT : integer : Checkpointer Database Port Number
+PG_USER : string : Checkpointer Database Username
+PG_PWD : string : Checkpointer Database Password
+PG_DB_NAME : string : Checkpointer Database Name
+
+
+
+# ======================================================================
+# USER STORE CONFIG
+# ======================================================================
+STORE_DB : string : Database Type used for Store (e.g. postgres, redis)
+CLEAR_USER_STORE : bool : Flag to clear existing store storage on app startup
+REDIS_HOST : string : Store Database Hostname
+REDIS_PORT : integer : Store Database Port Number
+REDIS_TTL : integer : Time in seconds to clear entry from store after save **EXPERIMENTAL**
+KEEP_FIRST_N : integer : Number of oldest entries to keep
+KEEP_LAST_N : integer : Number of latest entries to keep
+KEEP_THRESHOLD : integer : Total Number of entries to keep
+HISTORY : string : Identifier key value for User history
+WARMUP : string : Identifier key value for warmup tracking
+USERS : string : Identifier key value for User storage
+
+
+
+# ======================================================================
+# DIP CONFIG
+# ======================================================================
+DIP_MIN_DROP : integer : Minimum DIP threshold
+DIP_HIGH_UTIL : integer : High utilization threshold
+DIP_KEYWORDS : list[string] : List of keywords in user question for DIP agent
+DIP_MCP : string : Source MCP Database name identifier for DIP (e.g. duckdb, mysql) 
+
+
+
+# ======================================================================
+# LLM CONFIG
+# ======================================================================
+OLLAMA_URL : string : Full URL for Ollama Generate API
+OLLAMA_HOST : string : Ollama Server Hostname
+OLLAMA_PORT : integer : Ollama Server Port Number
+SQL_MODEL : string : Ollama model name for SQL generation
+SUMMARY_MODEL : string : Ollama model name for text summarization
+SUMMARIZE_MODEL : string : Ollama model name for chat summarization
+OLLAMA_KEEP_ALIVE : string : Time for which model needs to be kept loaded in memory after invocation (e.g. '5m', '1h', '3600s')
+QA_TIMEOUT : integer : Ollama request timeout duration in seconds
+CONTEXT_LEN : integer : Maximum Number of tokens for input prompt processing 
+PREDICT_LEN : integer : Maximum Number of tokens for model response output
+
+LLM_PORT_CONFIG={
+    *Model Name in string* : *List of integer ports of containers having said model* . Examples below:
+    "qwen2.5-coder:7b" : [11438, 11435, 11436, 11439],
+    "llama3.2:3b" : [11437, 11435, 11436, 11439],
+    "sqlcoder:7b" : [11435, 11436, 11439]
+}
+
+
+
+# ======================================================================
+# LOGGER CONFIG (for fastlogging)
+# ======================================================================
+LOG_FILE : string : Name of General log file
+FEEDBACK_LOG_FILE : string : Name of Feedback log file
+LOG_LOCATION : string : Logs folder name OR its path from project base directory
+LOG_DOMAIN : string : Log identifier name (e.g. Vegayan)
+LOG_BACKUPS : integer : Number of rolling log files to be maintained
+LOG_MAX_SIZE : integer : Maximum size of log file in bytes
+LOG_TO_CONSOLE : bool : Stream logs to stdout
+LOG_INDENT : tuple(integer) : Indentation parameters in spaces counts
+LOG_ENCODING : string : Encoding scheme for logs
+
+
+
+# ======================================================================
+# PODMAN CONFIG
+# ======================================================================
+POD_UTIL_THRESHOLD : float : Maximum CPU utilization percentage for podman selection for execution
+LLM_PODMAN_PREFIX : string : Ollama Podman name prefix pattern
+
+
+
+# ======================================================================
+# SCRATCHPAD CONFIG (for testing purposes)
+# ======================================================================
+USERS : integer : Total number of sample users
+SESSIONS : integer : Total number of sample sessions per sample user
+REQUESTS : integer : Total number of requests per sample session session per sample user
+SAFE_DELAY : float : Wait time in seconds before execution of each agent graph stage
+
+
+
+# ======================================================================
+# API SERVER CONFIG
+# ======================================================================
+SERVER_HOST : string : API Server Hostname
+SERVER_PORT : int : API Server Port Number
+
+
+
+# ======================================================================
+# TRAFFIC CONFIG
+# ======================================================================
+QA_ROW_LIMIT : integer : Maximum rows in SQL query response
+QA_MAX_REPAIRS : integer : Maximum attempts at SQL query correction
+TRAFFIC_TABLE_NAME : string : Name of Database Table **NOT IN USE**
+DATA_SOURCE : string : Data source identifier
+CHART_INTENT_ALIASES : Dict : Map for identifying output chart based on user input
+
+
