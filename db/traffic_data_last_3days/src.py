@@ -37,7 +37,7 @@ class TrafficDataLastThreeDays(AbstractDB):
         lts = await get_lts_coro
         when = await get_when_coro
 
-        last_conversation = memories_to_chat_msgs(memories)[-1:] if memories else None
+        last_conversation = memories_to_chat_msgs(memories)[-1:] if memories else []
         return sql_generate_prompt().invoke({
             "db_type": db_type, "business_facts": business_facts,
             "table_name": TRAFFIC_TABLE_NAME, "schema": schema,

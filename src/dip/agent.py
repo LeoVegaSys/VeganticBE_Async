@@ -197,7 +197,9 @@ class DipAgent:
                 "summary": summary,
                 "error": _error
                 }
-        return {}
+        return {
+            "summary": "",
+        }
 
     @async_delay()
     @memoize(configuration=m_cfg)

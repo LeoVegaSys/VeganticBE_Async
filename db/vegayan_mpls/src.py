@@ -33,7 +33,7 @@ class VegayanMPLS(AbstractDB):
         business_facts = await get_business_coro
         memories = await get_memories_coro
 
-        last_conversation = memories_to_chat_msgs(memories)[-1:] if memories else None
+        last_conversation = memories_to_chat_msgs(memories)[-1:] if memories else []
         return sql_generate_prompt().invoke({
             "db_type": db_type, "schema": schema, "question": question,
              "business_facts": business_facts,

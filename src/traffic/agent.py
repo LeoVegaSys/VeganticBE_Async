@@ -146,7 +146,7 @@ class TrafficAgent:
         self.log.debug(f"\ntraffic_agent :: summarize :: state :: {state}")
         _error = ""
         if not state["summarize"]:
-            return 
+            return {"summary": ""}
         if state["sql_query"] == "NOT_RELEVANT":
             return {"summary": f'Sorry, Please provide additional information. Original question : {state["question"]}'}
         try:
