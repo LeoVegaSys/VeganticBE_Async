@@ -8,6 +8,7 @@ dependencies = [
     "aiofiles>=25.1.0",
     "aiohttp-cors>=0.8.1",
     "aiohttp[speedups]>=3.14.3",
+    "aiomysql>=0.3.2",
     "asyncio>=4.0.0",
     "deepagents>=0.6.7",
     "fastlogging>=1.2.0",

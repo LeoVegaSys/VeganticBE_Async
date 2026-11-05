@@ -1,0 +1,7 @@
+DB_HOST="localhost"
+DB_PORT=3307
+DB_USER="ai_app"
+DB_PASSWORD="ai_app"
+DB_NAME="ai_db"
+ROWS_LIMIT=500
+DEL_SESS_ON_FILTER_CHANGE=True

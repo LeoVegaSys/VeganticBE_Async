@@ -10,6 +10,104 @@ class Context:
     user_id: str
 
 
+class NewQueryRequest:
+    def __init__(self, body: Union[dict, None]):
+        if not self.is_valid(body):
+            return None
+        self.request_ids = body.get('request_ids', [])
+        pass
+
+    def is_valid(self, body):
+        return True if isinstance(body, dict) else False
+
+
+class UserDetailsRequest:
+    def __init__(self, body: Union[dict, None]):
+        if not self.is_valid(body):
+            return None
+        self.user_name = body.get('username', '')
+
+    def is_valid(self, body):
+        return True if isinstance(body, dict) else False
+
+
+class UserSessionsRequest:
+    def __init__(self, body: Union[dict, None]):
+        if not self.is_valid(body):
+            return None
+        self.user_id = body.get('userId', '')
+
+    def is_valid(self, body):
+        return True if isinstance(body, dict) else False
+
+
+class NewSessionRequest:
+    def __init__(self, body: Union[dict, None]):
+        if not self.is_valid(body):
+            return None
+        self.user_id = body.get('userId', '')
+        self.label = body.get('label', '')
+        self.networks = body.get('networks', [])
+        self.levels = body.get('levels', [])
+        self.circle = body.get('circle', [])
+        self.services = body.get('services', [])
+        self.date_from = body.get('dateFrom', '')
+        self.date_to = body.get('dateTo', '')
+        self.time_from = body.get('timeStart', '')
+        self.time_to = body.get('timeEnd', '')
+
+    def is_valid(self, body):
+        return True if isinstance(body, dict) else False
+
+
+class SessionDetailsRequest:
+    def __init__(self, body: Union[dict, None]):
+        if not self.is_valid(body):
+            return None
+        self.session_id = body.get('sessionId', '')
+
+    def is_valid(self, body):
+        return True if isinstance(body, dict) else False
+
+
+class UpdateSessionRequest:
+    def __init__(self, body: Union[dict, None]):
+        if not self.is_valid(body):
+            return None
+        # self.session_id = body.get('sessionId', '')
+        self.networks = body.get('networks', [])
+        self.levels = body.get('levels', [])
+        self.circle = body.get('circle', [])
+        self.services = body.get('services', [])
+        self.date_from = body.get('dateFrom', '')
+        self.date_to = body.get('dateTo', '')
+        self.time_from = body.get('timeStart', '')
+        self.time_to = body.get('timeEnd', '')
+
+    def is_valid(self, body):
+        return True if isinstance(body, dict) else False
+
+
+class ClearSessionRequest:
+    def __init__(self, body: Union[dict, None]):
+        if not self.is_valid(body):
+            return None
+        self.clear_messages = body.get('clearMessages', True)
+
+    def is_valid(self, body):
+        return True if isinstance(body, dict) else False
+
+
+class DeleteSessionRequest:
+    def __init__(self, body: Union[dict, None]):
+        if not self.is_valid(body):
+            return None
+        self.session_id = body.get('sessionId', '')
+
+    def is_valid(self, body):
+        return True if isinstance(body, dict) else False
+
+
 class QueryRequest:
     def __init__(self, body: Union[dict, None]):
         if not self.is_valid(body):

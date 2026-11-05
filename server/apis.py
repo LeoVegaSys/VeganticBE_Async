@@ -5,8 +5,76 @@ import aiohttp_cors
 
 from config.server import SERVER_HOST
 from src.startpoint.graph import WorkflowManager
-from utils.context import QueryRequest, SummarizeRequest
+from utils.context import (
+    QueryRequest, SummarizeRequest, ClearSessionRequest,
+    UpdateSessionRequest, UserDetailsRequest, UserSessionsRequest)
 from utils.summarization import perform
+
+
+async def user_details(request):
+    try:
+        data = await request.json()
+        obj = UserDetailsRequest(body=data)
+        ### Call func to get user details here
+    except json.JSONDecodeError:
+        return web.json_response({"error": "Invalid JSON"}, status=400)
+    except Exception as e:
+        return web.json_response({"error": str(e)}, status=500)
+
+
+async def user_sessions(request):
+    try:
+        data = await request.json()
+        obj = UserSessionsRequest(body=data)
+        ### Call func to get user sessions list here
+    except json.JSONDecodeError:
+        return web.json_response({"error": "Invalid JSON"}, status=400)
+    except Exception as e:
+        return web.json_response({"error": str(e)}, status=500)
+
+
+async def session_details(request):
+    try:
+        session_id = request.match_info['sessionId']
+        ### Call func to get session messages details here
+    except json.JSONDecodeError:
+        return web.json_response({"error": "Invalid JSON"}, status=400)
+    except Exception as e:
+        return web.json_response({"error": str(e)}, status=500)
+
+
+async def delete_session(request):
+    try:
+        session_id = request.match_info['sessionId']
+        ### Call func to delete session here
+    except json.JSONDecodeError:
+        return web.json_response({"error": "Invalid JSON"}, status=400)
+    except Exception as e:
+        return web.json_response({"error": str(e)}, status=500)
+
+
+async def clear_session(request):
+    try:
+        session_id = request.match_info['sessionId']
+        data = await request.json()
+        obj = ClearSessionRequest(body=data)
+        ### Call func to clear session here
+    except json.JSONDecodeError:
+        return web.json_response({"error": "Invalid JSON"}, status=400)
+    except Exception as e:
+        return web.json_response({"error": str(e)}, status=500)
+
+
+async def update_session(request):
+    try:
+        session_id = request.match_info['sessionId']
+        data = await request.json()
+        obj = UpdateSessionRequest(body=data)
+        ### Call func to update session here
+    except json.JSONDecodeError:
+        return web.json_response({"error": "Invalid JSON"}, status=400)
+    except Exception as e:
+        return web.json_response({"error": str(e)}, status=500)
 
 
 async def handle_query(request):
@@ -58,9 +126,15 @@ async def summarize_chat(request):
 async def init_app():
     app = web.Application()
     app.add_routes([
+        web.get('/auth/me', user_details),
+        web.get('/sessions', user_sessions),
+        web.get('/sessions/{sessionId}/messages', session_details),
+        web.delete('/sessions/{sessionId}', delete_session),
+        web.patch('/sessions/clear/{sessionId}', clear_session),
+        web.patch('/sessions/update/{sessionId}', update_session),
         web.post('/ask', handle_query),
         web.post('/summarize', summarize_chat),
-        web.post('/feedback', handle_feedback)
+        web.post('/feedback', handle_feedback),
     ])
 
     # Configure CORS
