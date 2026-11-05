@@ -6,9 +6,8 @@ from config.user_sessions import (
 
 
 class UserSessionsManager:
-    def __init__(self, query: str):
-        self.query = query
-        self.db_conf = self._user_db_config()
+    def __init__(self, db_conf: dict = None):
+        self.db_conf = db_conf or self._user_db_config()
 
     @staticmethod
     def _user_db_config():
@@ -18,17 +17,17 @@ class UserSessionsManager:
             "password": DB_PASSWORD, "db": DB_NAME,
         }
 
-    async def aget(self):
+    async def aget(self, query: str):
         """Retrieves records for given SELECT queries"""
         try:
             async with aiomysql.create_pool(**self.db_conf) as pool:
                 async with pool.acquire() as conn:
                     async with conn.cursor(aiomysql.DictCursor) as cursor:
 
-                        if "limit" not in self.query.lower():
-                            self.query += f" LIMIT {ROWS_LIMIT}"
+                        if "limit" not in query.lower():
+                            query += f" LIMIT {ROWS_LIMIT}"
 
-                        await cursor.execute(self.query)
+                        await cursor.execute(query)
                         cols = [d[0] for d in cursor.description]
                         cols_dt = [d[1] for d in cursor.description]
                         rows = await cursor.fetchall()
@@ -41,18 +40,38 @@ class UserSessionsManager:
                             "rows":rows,
                             "rowCount":rowCount
                         }
-                        print(f"aget :: {rowCount} rows :: Q {self.query}")
+                        print(f"aget :: {rowCount} rows :: Q {query}")
 
             # return json.dumps(rows, default=str)
             return result
 
         except Exception as e:
-            raise Exception(f"Query execution failed: {str(e)}")
+            raise Exception(f"SELECT Query |{query}| execution failed: {str(e)}")
 
 
-    async def adelete(self):
-        pass
+    async def adelete(self, query: str):
+        """Deletes records for given queries"""
+        try:
+            async with aiomysql.create_pool(**self.db_conf) as pool:
+                async with pool.acquire() as conn:
+                    async with conn.cursor(aiomysql.DictCursor) as cursor:
+                        await cursor.execute(query)
+                        await conn.commit()
+                        print(f"adelete :: {cursor.rowcount} rows :: Q {query}")
+            return {'ok': True}
+        except Exception as e:
+            raise Exception(f"DELETE Query |{query}| execution failed: {str(e)}")
 
 
-    async def aupdate(self):
-        pass
+    async def aupdate(self, query: str):
+        """Updates records for given INSERT/UPDATE queries"""
+        try:
+            async with aiomysql.create_pool(**self.db_conf) as pool:
+                async with pool.acquire() as conn:
+                    async with conn.cursor(aiomysql.DictCursor) as cursor:
+                        await cursor.execute(query)
+                        await conn.commit()
+                        print(f"aupdate :: {cursor.rowcount} rows :: Q {query}")
+            return {'ok': True}
+        except Exception as e:
+            raise Exception(f"INSERT/UPDATE Query |{query}| execution failed: {str(e)}")

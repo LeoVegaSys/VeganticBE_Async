@@ -9,6 +9,9 @@ from utils.context import (
     QueryRequest, SummarizeRequest, ClearSessionRequest,
     UpdateSessionRequest, UserDetailsRequest, UserSessionsRequest)
 from utils.summarization import perform
+from utils.user_session_mgmt import (
+    get_user_details
+)
 
 
 async def user_details(request):
@@ -16,6 +19,8 @@ async def user_details(request):
         data = await request.json()
         obj = UserDetailsRequest(body=data)
         ### Call func to get user details here
+        result = await get_user_details(obj.user_id)
+        return result
     except json.JSONDecodeError:
         return web.json_response({"error": "Invalid JSON"}, status=400)
     except Exception as e:

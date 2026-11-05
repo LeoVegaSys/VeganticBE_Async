@@ -1,9 +1,10 @@
 from managers.user_session_db.engine import UserSessionsManager
 
 
-async def get_user_details(user_id : str):
-    '''SELECT id, username, display_name FROM users WHERE id = ? LIMIT 1;'''
-    pass
+async def get_user_details(user_id : int):
+    query = f'SELECT id, username, display_name FROM users WHERE id = {user_id} LIMIT 1;'
+    result = await UserSessionsManager.aget(query)
+    return result
 
 
 async def get_user_sessions(user_id: str):

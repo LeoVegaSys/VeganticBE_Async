@@ -25,7 +25,7 @@ class UserDetailsRequest:
     def __init__(self, body: Union[dict, None]):
         if not self.is_valid(body):
             return None
-        self.user_name = body.get('username', '')
+        self.user_id = int(body.get('userId', 0))
 
     def is_valid(self, body):
         return True if isinstance(body, dict) else False
@@ -35,7 +35,7 @@ class UserSessionsRequest:
     def __init__(self, body: Union[dict, None]):
         if not self.is_valid(body):
             return None
-        self.user_id = body.get('userId', '')
+        self.user_id = int(body.get('userId', 0))
 
     def is_valid(self, body):
         return True if isinstance(body, dict) else False
@@ -45,7 +45,7 @@ class NewSessionRequest:
     def __init__(self, body: Union[dict, None]):
         if not self.is_valid(body):
             return None
-        self.user_id = body.get('userId', '')
+        self.user_id = int(body.get('userId', 0))
         self.label = body.get('label', '')
         self.networks = body.get('networks', [])
         self.levels = body.get('levels', [])
@@ -64,7 +64,7 @@ class SessionDetailsRequest:
     def __init__(self, body: Union[dict, None]):
         if not self.is_valid(body):
             return None
-        self.session_id = body.get('sessionId', '')
+        self.session_id = int(body.get('sessionId', 0))
 
     def is_valid(self, body):
         return True if isinstance(body, dict) else False
@@ -102,7 +102,7 @@ class DeleteSessionRequest:
     def __init__(self, body: Union[dict, None]):
         if not self.is_valid(body):
             return None
-        self.session_id = body.get('sessionId', '')
+        self.session_id = int(body.get('sessionId', 0))
 
     def is_valid(self, body):
         return True if isinstance(body, dict) else False
