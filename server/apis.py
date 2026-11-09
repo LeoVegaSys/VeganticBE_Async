@@ -5,22 +5,33 @@ import aiohttp_cors
 
 from config.server import SERVER_HOST
 from src.startpoint.graph import WorkflowManager
-from utils.context import (
-    QueryRequest, SummarizeRequest, ClearSessionRequest,
-    UpdateSessionRequest, UserDetailsRequest, UserSessionsRequest)
+from utils.context import (QueryRequest, SummarizeRequest)
 from utils.summarization import perform
 from utils.user_session_mgmt import (
-    get_user_details
+    get_user_details, get_user_sessions, update_session_details,
+    clear_conversation, delete_session_details, get_next_section_label,
+    create_new_session, get_old_session
 )
+
+
+async def process_query(request):
+    try:
+        data = await request.json()
+        # call langgraph workflow start func here
+        payload = orjson.dumps(result).decode("utf-8")
+        return web.json_response(payload)
+    except json.JSONDecodeError:
+        return web.json_response({"error": "Invalid JSON"}, status=400)
+    except Exception as e:
+        return web.json_response({"error": str(e)}, status=500)
 
 
 async def user_details(request):
     try:
         data = await request.json()
-        obj = UserDetailsRequest(body=data)
-        ### Call func to get user details here
-        result = await get_user_details(obj.user_id)
-        return result
+        result = await get_user_details(data)
+        payload = orjson.dumps(result).decode("utf-8")
+        return web.json_response(payload)
     except json.JSONDecodeError:
         return web.json_response({"error": "Invalid JSON"}, status=400)
     except Exception as e:
@@ -30,8 +41,23 @@ async def user_details(request):
 async def user_sessions(request):
     try:
         data = await request.json()
-        obj = UserSessionsRequest(body=data)
-        ### Call func to get user sessions list here
+        result = await get_user_sessions(data)
+        payload = orjson.dumps(result).decode("utf-8")
+        return web.json_response(payload)
+    except json.JSONDecodeError:
+        return web.json_response({"error": "Invalid JSON"}, status=400)
+    except Exception as e:
+        return web.json_response({"error": str(e)}, status=500)
+
+
+async def add_new_session(request):
+    try:
+        data = await request.json()
+        result = await create_new_session(data)
+        # session_id = int(request.match_info['sessionId'])
+        ### Call func to get session messages details here
+        payload = orjson.dumps(result).decode("utf-8")
+        return web.json_response(payload)
     except json.JSONDecodeError:
         return web.json_response({"error": "Invalid JSON"}, status=400)
     except Exception as e:
@@ -40,8 +66,12 @@ async def user_sessions(request):
 
 async def session_details(request):
     try:
-        session_id = request.match_info['sessionId']
-        ### Call func to get session messages details here
+        # get user_id from jwt
+        user_id = 0
+        session_id = int(request.match_info['sessionId'])
+        result = await get_old_session(user_id, session_id)
+        payload = orjson.dumps(result).decode("utf-8")
+        return web.json_response(payload)
     except json.JSONDecodeError:
         return web.json_response({"error": "Invalid JSON"}, status=400)
     except Exception as e:
@@ -50,8 +80,10 @@ async def session_details(request):
 
 async def delete_session(request):
     try:
-        session_id = request.match_info['sessionId']
-        ### Call func to delete session here
+        session_id = int(request.match_info['sessionId'])
+        result = await delete_session_details(session_id)
+        payload = orjson.dumps(result).decode("utf-8")
+        return web.json_response(payload)
     except json.JSONDecodeError:
         return web.json_response({"error": "Invalid JSON"}, status=400)
     except Exception as e:
@@ -60,10 +92,11 @@ async def delete_session(request):
 
 async def clear_session(request):
     try:
-        session_id = request.match_info['sessionId']
+        session_id = int(request.match_info['sessionId'])
         data = await request.json()
-        obj = ClearSessionRequest(body=data)
-        ### Call func to clear session here
+        result = await clear_conversation(session_id, data)
+        payload = orjson.dumps(result).decode("utf-8")
+        return web.json_response(payload)
     except json.JSONDecodeError:
         return web.json_response({"error": "Invalid JSON"}, status=400)
     except Exception as e:
@@ -72,10 +105,11 @@ async def clear_session(request):
 
 async def update_session(request):
     try:
-        session_id = request.match_info['sessionId']
+        session_id = int(request.match_info['sessionId'])
         data = await request.json()
-        obj = UpdateSessionRequest(body=data)
-        ### Call func to update session here
+        result = await update_session_details(session_id, data)
+        payload = orjson.dumps(result).decode("utf-8")
+        return web.json_response(payload)
     except json.JSONDecodeError:
         return web.json_response({"error": "Invalid JSON"}, status=400)
     except Exception as e:
@@ -134,9 +168,11 @@ async def init_app():
         web.get('/auth/me', user_details),
         web.get('/sessions', user_sessions),
         web.get('/sessions/{sessionId}/messages', session_details),
+        web.post('/sessions', add_new_session),
         web.delete('/sessions/{sessionId}', delete_session),
         web.patch('/sessions/clear/{sessionId}', clear_session),
         web.patch('/sessions/update/{sessionId}', update_session),
+        web.post('/query', process_query),
         web.post('/ask', handle_query),
         web.post('/summarize', summarize_chat),
         web.post('/feedback', handle_feedback),

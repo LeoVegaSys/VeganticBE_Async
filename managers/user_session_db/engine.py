@@ -49,29 +49,35 @@ class UserSessionsManager:
             raise Exception(f"SELECT Query |{query}| execution failed: {str(e)}")
 
 
-    async def adelete(self, query: str):
-        """Deletes records for given queries"""
+    async def aupd_del(self, q_list: list):
+        """Updates records for given DELETE/UPDATE queries"""
         try:
             async with aiomysql.create_pool(**self.db_conf) as pool:
                 async with pool.acquire() as conn:
                     async with conn.cursor(aiomysql.DictCursor) as cursor:
-                        await cursor.execute(query)
+                        for query in q_list:
+                            await cursor.execute(query)
+                            print(f"aupd_del :: {cursor.rowcount} rows :: Q {query}")
                         await conn.commit()
-                        print(f"adelete :: {cursor.rowcount} rows :: Q {query}")
             return {'ok': True}
         except Exception as e:
-            raise Exception(f"DELETE Query |{query}| execution failed: {str(e)}")
+            raise Exception(f"UPDATE/DEL Query execution failed: {str(e)}")
 
 
-    async def aupdate(self, query: str):
-        """Updates records for given INSERT/UPDATE queries"""
+    async def ainsert(self, q_list: list):
+        """Inserts records for given INSERT queries"""
         try:
+            new_id = 0
             async with aiomysql.create_pool(**self.db_conf) as pool:
                 async with pool.acquire() as conn:
                     async with conn.cursor(aiomysql.DictCursor) as cursor:
-                        await cursor.execute(query)
+                        for query in q_list:
+                            await cursor.execute(query)
+                            new_id = cursor.lastrowid
+                            print(f"ainsert :: {cursor.rowcount} rows :: Q {query}")
+                            print(f"ainsert :: ID {new_id}")
                         await conn.commit()
-                        print(f"aupdate :: {cursor.rowcount} rows :: Q {query}")
-            return {'ok': True}
+            print(f"ainsert 2 :: ID {new_id}")
+            return {'ok': True, 'new_id': new_id}
         except Exception as e:
-            raise Exception(f"INSERT/UPDATE Query |{query}| execution failed: {str(e)}")
+            raise Exception(f"INSERT Query execution failed: {str(e)}")
