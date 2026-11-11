@@ -1,4 +1,4 @@
-from db.mpls_traffic_raw.config import TRAFFIC_DB_NAME, MCP_DB_TYPE
+from db.ai_demo.config import TRAFFIC_DB_NAME, MCP_DB_TYPE
 from config.mcp import MCP_HOST, MCP_PORT
 
 MCP_CONFIG={
@@ -9,6 +9,7 @@ MCP_CONFIG={
                 "url": f"http://{MCP_HOST}:{MCP_PORT}/mcp",
             },
         "query_function": "arun_query",
+        "procedure_function": "call_procedure",
         "query_key": "query",
         "query_db": TRAFFIC_DB_NAME,
     }

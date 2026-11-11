@@ -76,3 +76,9 @@ class AIDemo(AbstractDB):
         result = await self.db_manager._execute_query(
             uuid=self.request_id, query=query)
         return result
+
+
+    async def call_procedure(self, proc_name: str, proc_params: list = None):
+        result = await self.db_manager._call_proc(
+            uuid=self.request_id, proc_name=proc_name, params=proc_params)
+        return result

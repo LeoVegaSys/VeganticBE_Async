@@ -2,32 +2,30 @@ import json
 from typing import Union
 
 
-def get_mcp_details(mcp_config: dict):
+def parse_mcp_proc_response(mcp_result: Union[list, dict, str, None], tool_name: str = "") -> dict:
     """
-    Parses MCP config
-    Input:
-        mcp_config: dict -> MCP Configuration with additional details
-    Returns:
-        _name: str -> Database type (e.g. mysql, duckdb)
-        _server_config: dict -> MCP Configuration details
-        _func: str -> Database query execution function name
-        _key: str -> Database query execution function parameter name
-        _db: str | None -> Database name to connect to
+    Parse MCP Tool Procedure Execution response
+    Input args:
+        Expected mcp_result structure:
+        [
+            {'type': 'text',
+            'text': '[
+                {"id":1,"username":"WWWW","password_hash":"XXXXX","display_name":"EEEEE","created_at":"2026-10-07T06:54:00"}]',
+            'id': 'lc_8aa970c6-5273-4a8e-8284-d6969c674d7c'}
+        ]
     """
-    _server_config = {}
-    _func = ""
-    _key = ""
-    _name = ""
-    for key, val in mcp_config.items():
-        """Get MCP server details"""
-        _name = key
-        _server_config[key] = val["server"]
-        """Get MCP executor function details"""
-        _func = val["query_function"]
-        """Get MCP API key details"""
-        _key = val["query_key"]
-        _db = val["query_db"] if "query_db" in val else None
-    return (_name, _server_config, _func, _key, _db)
+
+    try:
+        result = json.loads(mcp_result[0]['text'])
+        tool_id = mcp_result[0]['id']
+
+        result["data"] = result
+        result['tool_id'] = tool_id
+        result['tool_name'] = tool_name
+        return result
+    except Exception as e:
+        raise e
+
 
 def parse_mcp_query_response(mcp_result: Union[list, dict, str, None], tool_name: str = "") -> dict:
     """

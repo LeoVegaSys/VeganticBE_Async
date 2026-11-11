@@ -168,6 +168,7 @@ class MCPConfigParser:
         self.name = None
         self.config = {}
         self.func = None
+        self.proc_func = None
         self.key = None
         self.db_name = None
         self.host = None
@@ -180,12 +181,14 @@ class MCPConfigParser:
         for key, val in self.body.items():
             self.name = key
             """Get MCP server details"""
-            self.config[key] = val["server"]
-            """Get MCP executor function details"""
-            self.func = val["query_function"]
+            self.config[key] = val.get("server", None)
+            """Get MCP query executor function details"""
+            self.func = val.get("query_function", None)
+            """Get MCP procedure executor function details"""
+            self.proc_func = val.get("procedure_function", None)
             """Get MCP API key details"""
-            self.key = val["query_key"]
-            self.db_name = val["query_db"] if "query_db" in val else None
-            self.host = val["query_host"] if "query_host" in val else None
-            self.port = val["query_port"] if "query_port" in val else None
+            self.key = val.get("query_key", None)
+            self.db_name = val.get("query_db", None)
+            self.host = val.get("query_host", None)
+            self.port = val.get("query_port", None)
         return self

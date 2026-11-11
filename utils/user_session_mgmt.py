@@ -55,7 +55,10 @@ async def create_new_session(data: dict):
             {obj.circle}, {obj.services}, {obj.date_from},
             {obj.date_to}, {obj.time_from}, {obj.time_to}
             );'''
-        result = await UserSessionsManager().ainsert([query])
+        res = await UserSessionsManager().ainsert([query])
+        new_session_id = int(res['new_id'])
+        query_2 = f'''SELECT * from chat_sessions where id = {new_session_id};'''
+        result = await UserSessionsManager().aget(query_2)
         # Get latest created session details and return
         return result
     except Exception as e:
@@ -72,6 +75,7 @@ async def add_new_user(data:dict):
         return result
     except Exception as e:
             raise e
+
 
 async def get_old_session(user_id: int, session_id: int):
     '''
