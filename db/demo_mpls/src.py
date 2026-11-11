@@ -5,12 +5,12 @@ from utils.store import get_conversation_history
 from utils.prompts import (memories_to_chat_msgs, sql_repair_prompt)
 
 from db.base_class import AbstractDB
-from db.ai_demo.config import TRAFFIC_TABLE_NAME
-from db.ai_demo.mcp import MCP_CONFIG
+from db.demo_mpls.config import TRAFFIC_TABLE_NAME
+from db.demo_mpls.mcp import MCP_CONFIG
 from db.manager import DatabaseManager
 
 
-class AIDemo(AbstractDB):
+class DemoMPLS(AbstractDB):
     def __init__(self):
         self.db_manager = DatabaseManager(MCP_CONFIG)
 

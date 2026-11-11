@@ -1,4 +1,4 @@
-from db.ai_demo.config import TRAFFIC_DB_NAME, MCP_DB_TYPE
+from db.demo_mpls.config import TRAFFIC_DB_NAME, MCP_DB_TYPE
 from config.mcp import MCP_HOST, MCP_PORT
 
 MCP_CONFIG={

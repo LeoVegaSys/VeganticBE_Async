@@ -2,7 +2,7 @@ from db.base_class import AbstractDB
 from db.traffic_data_last_3days.src import TrafficDataLastThreeDays
 from db.mpls_traffic_raw.src import MplsTrafficRaw
 from db.vegayan_mpls.src import VegayanMPLS
-from db.ai_demo.src import AIDemo
+from db.demo_mpls.src import DemoMPLS
 
 
 class DBFactory:
@@ -10,7 +10,7 @@ class DBFactory:
         "traffic_data_last_3days": TrafficDataLastThreeDays,
         "vegayan_mpls": VegayanMPLS,
         "mpls_traffic_raw": MplsTrafficRaw,
-        "ai_demo": AIDemo
+        "demo_mpls": DemoMPLS
     }
 
     @staticmethod

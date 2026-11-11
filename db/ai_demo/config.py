@@ -1,2 +1,0 @@
-MCP_DB_TYPE="mysql"
-TRAFFIC_DB_NAME="ai_db"

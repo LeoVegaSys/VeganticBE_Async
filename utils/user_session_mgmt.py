@@ -65,6 +65,7 @@ async def create_new_session(data: dict):
         raise e
 
 
+#TO BE DELETED
 async def add_new_user(data:dict):
     try:
         query = f'''
