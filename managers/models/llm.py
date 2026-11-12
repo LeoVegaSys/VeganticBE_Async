@@ -29,6 +29,8 @@ class LLMManager:
             temperature: float = 0.0,
             timeout: int = 0,
             warmup: bool = False,
+            format=None,            # Ollama structured output: JSON schema dict or "json"
+            options: dict = None,   # extra Ollama options, e.g. {"temperature": 0}
     ):
         log_model = model if model else self._model
         self._host, self._port = get_available_port(log_model)
@@ -51,6 +53,10 @@ class LLMManager:
             req_json["options"]["num_ctx"] = CONTEXT_LEN
         if PREDICT_LEN:
             req_json["options"]["num_predict"] = PREDICT_LEN
+        if options:
+            req_json["options"].update(options)
+        if format:
+            req_json["format"] = format
 
         try:
             async with aiohttp.ClientSession() as session:

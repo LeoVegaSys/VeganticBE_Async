@@ -28,6 +28,9 @@ class InputState(TypedDict):
     repairs_left: int
     summarize: bool
     review: str
+    filters: Dict[str, Any]         # UI global filters (src/dip_new)
+    params_used: Dict[str, Any]     # what the dip tool applied (src/dip_new)
+    warnings: List[str]
 
 class OutputState(TypedDict):
     request_id: str
@@ -52,4 +55,6 @@ class OutputState(TypedDict):
     # repairs_left: int
     summarize: bool
     review: str
-    
+    params_used: Dict[str, Any]
+    warnings: List[str]
+

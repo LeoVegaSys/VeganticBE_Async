@@ -130,6 +130,9 @@ class QueryRequest:
         self.session_id = body.get("context", {}).get("session_id", f"sess_{random.choice(range(SESSIONS))}")
         self.user_id = body.get("context", {}).get("user_id", f"user_{random.choice(range(USERS))}")
         self.data_source = body.get("context", {}).get("data_source", DATA_SOURCE)
+        # UI global filters (networks, levels, circle, services, dateFrom, dateTo,
+        # timeStart, timeEnd), at the top level or inside context. Used by src/dip_new.
+        self.filters = body.get("filters") or body.get("context", {}).get("filters") or {}
 
     def is_valid(self, body):
         return True if isinstance(body, dict) else False

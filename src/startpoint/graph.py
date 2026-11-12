@@ -47,11 +47,20 @@ async def call_traffic_graph(state: InputState, runtime: Runtime[Context]):
 
 async def call_dip_graph(state: InputState, runtime: Runtime[Context]):
     print(f"\ncall_dip_graph :: state :: {state}")
-    result = await DipWorkflowManager(
-        rid=state["request_id"], sid=state["session_id"], uid=state["user_id"],
-        source=state["data_source"]
-    ).run_dip_agent(
-        question=state["question"], summarize=state["summarize"])
+    if USE_DIP_NEW:
+        # LLM-filled dip tool + UI global filters (src/dip_new)
+        result = await DipNewWorkflowManager(
+            rid=state["request_id"], sid=state["session_id"], uid=state["user_id"],
+            source=state["data_source"]
+        ).run_dip_agent(
+            question=state["question"], summarize=state["summarize"],
+            filters=state.get("filters") or {}, session_id=state["session_id"])
+    else:
+        result = await DipWorkflowManager(
+            rid=state["request_id"], sid=state["session_id"], uid=state["user_id"],
+            source=state["data_source"]
+        ).run_dip_agent(
+            question=state["question"], summarize=state["summarize"])
 
     part_payload = partial(create_memory_payload, user_id=state['user_id'],
                            session_id=state["session_id"],
@@ -128,7 +137,8 @@ class WorkflowManager:
                         input={"question": rq.question, "request_id": _uuid,
                             "session_id": rq.session_id, "user_id": rq.user_id,
                             "summarize": rq.summarize,
-                            "data_source": rq.data_source},
+                            "data_source": rq.data_source,
+                            "filters": rq.filters},
                         config=config, context=context)
 
                 # snapshot = await app.aget_state(config)
