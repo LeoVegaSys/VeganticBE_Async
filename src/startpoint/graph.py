@@ -13,13 +13,16 @@ from langchain_core.runnables import RunnableConfig
 from src.startpoint.state import InputState, OutputState
 from src.traffic.graph import TrafficWorkflowManager
 from src.dip.graph import DipWorkflowManager
+from src.dip_new.graph import DipNewWorkflowManager
 from utils.store import (manage_store, write_to_store, get_ttl_config,
 clear_store, create_memory_payload)
 from utils.categorize import route_query
-from utils.context import Context, QueryRequest
+from utils.context import Context, QueryRequest, NewQueryRequest
 from config.store import (REDIS_HOST, REDIS_PORT, STORE_DB, CLEAR_USER_STORE,
-                          HISTORY)
+                          HISTORY, USE_STORE)
 from config.checkpointer import *
+from src.dip_new.config import USE_DIP_NEW
+
 
 async def classify_query(state: dict, runtime: Runtime[Context]) -> str:
     print(f"\nget_query_type :: state :: {state}")
@@ -147,3 +150,39 @@ class WorkflowManager:
 
                 print(f"\ngraph :: answer_query :: result :: {result}")
                 return result
+
+            
+    async def process_query(self, data: dict) -> dict:
+        """
+        Run the agent workflow and return the formatted answer.
+        """
+        rq : NewQueryRequest = NewQueryRequest(body=data)
+        print(f"\nGraph :: process_query :: req {rq.__dict__}")
+
+        if USE_CHECKPOINTER and USE_STORE:
+            return self.answer_query(rq=rq)
+
+        app = self.create_workflow().compile()
+
+        _uuid = rq.request_id or uuid4().hex[:12]
+        user_choices = {
+            'filters': rq.filters,
+            'context': rq.selected_context,
+            'query_selections': rq.selected_values,
+        }
+
+        config: RunnableConfig = {
+            "configurable": {"thread_id": rq.session_id}
+            } if rq.session_id else None
+        context = Context(user_id=rq.user_id) if rq.user_id else None
+
+        
+        result = await app.ainvoke(
+            input={"question": rq.question, "request_id": _uuid,
+                "session_id": rq.session_id, "user_id": rq.user_id,
+                "summarize": rq.summarize, "choices": user_choices,
+                "data_source": rq.data_source},
+            config=config, context=context)
+
+        print(f"\ngraph :: process_query :: result :: {result}")
+        return result

@@ -1,3 +1,4 @@
+USE_STORE=True
 STORE_DB="redis"
 CLEAR_USER_STORE=False
 
