@@ -1,4 +1,4 @@
-USE_STORE=True
+USE_STORE=False
 STORE_DB="redis"
 CLEAR_USER_STORE=False
 

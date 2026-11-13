@@ -3,6 +3,7 @@ from langgraph.graph import StateGraph, START, END
 from src.dip.state import DipState, DipOutputState
 from src.dip.agent import DipAgent
 from config.dip import DIP_MCP
+from config.checkpointer import USE_CHECKPOINTER
 
 class DipWorkflowManager:
     def __init__(self, rid: str, sid: str, uid: str, source: str):
@@ -27,13 +28,17 @@ class DipWorkflowManager:
         return workflow
     
     def returnGraph(self):
-        return self.create_workflow().compile(checkpointer=True)
+        if USE_CHECKPOINTER:
+            return self.create_workflow().compile(checkpointer=True)
+        return self.create_workflow().compile()
 
     
     async def run_dip_agent(self, question: str, summarize: bool) -> dict:
         print(f"\nDipGraph :: run_dip_agent :: Q {question} :: SM {summarize}")
-        app = self.create_workflow().compile(checkpointer=True)
-        # app = self.create_workflow().compile()
+        if USE_CHECKPOINTER:
+            app = self.create_workflow().compile(checkpointer=True)
+        else:
+            app = self.create_workflow().compile()
         result = await app.ainvoke(
             {"question": question, "summarize": summarize}
         )

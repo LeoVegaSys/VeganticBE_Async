@@ -144,6 +144,8 @@ class QueryRequest:
         # UI global filters (networks, levels, circle, services, dateFrom, dateTo,
         # timeStart, timeEnd), at the top level or inside context. Used by src/dip_new.
         self.filters = body.get("filters") or body.get("context", {}).get("filters") or {}
+        self.selected_context = body.get("selected_context", [])
+        self.selected_values = body.get("selected_values", [])
 
     def is_valid(self, body):
         return True if isinstance(body, dict) else False

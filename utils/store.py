@@ -6,7 +6,7 @@ from langgraph.store.redis.aio import AsyncRedisStore
 
 from config.store import (KEEP_FIRST_N, KEEP_LAST_N, KEEP_THRESHOLD,
                           REDIS_HOST, REDIS_PORT, REDIS_TTL, STORE_DB, HISTORY,
-                          WARMUP, USERS)
+                          WARMUP, USERS, USE_STORE)
 from config.llm import OLLAMA_KEEP_ALIVE
 
 REDIS_STORE_URI = f"{STORE_DB}://{REDIS_HOST}:{REDIS_PORT}"
@@ -25,6 +25,8 @@ async def manage_store(user_id: str, session_id: str):
     Check counts of each namespace, Sort by updated_at asc
     Keep first KEEP_FIRST_N and latest KEEP_LAST_N
     """
+    if not USE_STORE:
+        return False
     filters = {"user_id": user_id, "session_id": session_id}
     try:
         async with AsyncRedisStore.from_conn_string(REDIS_STORE_URI) as store:
@@ -42,6 +44,8 @@ async def manage_store(user_id: str, session_id: str):
 
 
 async def write_to_store(category: str, payload: dict):
+    if not USE_STORE:
+        return False
     try:
         async with AsyncRedisStore.from_conn_string(REDIS_STORE_URI) as store:
             print(f"store write :C: {category} :P: {payload}")
@@ -59,6 +63,8 @@ async def clear_store(user_id: str, category: str = ""):
     If category is provided, deletes all category records ONLY for user.
     If category is not provided, deletes all store records for ALL categories for user.
     """
+    if not USE_STORE:
+        return False
     filters = {"user_id": user_id}
     try:
         async with AsyncRedisStore.from_conn_string(REDIS_STORE_URI) as store:
@@ -82,6 +88,8 @@ async def read_from_store(user_id: str, session_id: str, category: str,
     If params is not provided, Returns all records for the category.
     """
     result_set = []
+    if not USE_STORE:
+        return result_set
     for param in params:
         filters = {"user_id": user_id, "session_id": session_id, "type": param}
         try:
@@ -100,6 +108,9 @@ async def get_conversation_history(user_id: str, session_id: str,
     """
     Returns previous user conversations 
     """
+    memories = []
+    if not USE_STORE:
+        return memories
     # if not warmup_done(user_id):
     memories = await read_from_store(user_id=user_id, session_id=session_id,
                                      category=HISTORY, params=params)
@@ -109,6 +120,8 @@ async def get_conversation_history(user_id: str, session_id: str,
 def create_memory_payload(param_type: str, user_id: str, session_id: str, 
                           request_id: str, data: dict, fields: list = []):
     payload = {}
+    if not USE_STORE:
+        return payload
     payload["type"] = param_type
     payload["user_id"] = user_id
     payload["session_id"] = session_id

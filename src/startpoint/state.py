@@ -31,6 +31,7 @@ class InputState(TypedDict):
     filters: Dict[str, Any]         # UI global filters (src/dip_new)
     params_used: Dict[str, Any]     # what the dip tool applied (src/dip_new)
     warnings: List[str]
+    choices: Dict[str, Any]         # Stores UI filters, context and values
 
 class OutputState(TypedDict):
     request_id: str
@@ -57,4 +58,5 @@ class OutputState(TypedDict):
     review: str
     params_used: Dict[str, Any]
     warnings: List[str]
+    choices: Dict[str, Any]         # Stores UI filters, context and values
 

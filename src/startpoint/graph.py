@@ -133,6 +133,9 @@ class WorkflowManager:
         Run the agent workflow and return the formatted answer.
         """
         print(f"\nGraph :: answer_query :: req {rq.__dict__}")
+        if not USE_STORE and not USE_CHECKPOINTER:
+            result = await self.process_query(rq)
+            return result
 
         store_uri = f"{STORE_DB}://{REDIS_HOST}:{REDIS_PORT}"
         pg_uri = f"{CHECKPOINTER_DB}://{PG_USER}:{PG_PWD}@{PG_HOST}:{PG_PORT}/{PG_DB_NAME}"
@@ -178,15 +181,11 @@ class WorkflowManager:
                 return result
 
             
-    async def process_query(self, data: dict) -> dict:
+    async def process_query(self, rq: QueryRequest) -> dict:
         """
         Run the agent workflow and return the formatted answer.
         """
-        rq : NewQueryRequest = NewQueryRequest(body=data)
         print(f"\nGraph :: process_query :: req {rq.__dict__}")
-
-        if USE_CHECKPOINTER and USE_STORE:
-            return self.answer_query(rq=rq)
 
         app = self.create_workflow().compile()
 
