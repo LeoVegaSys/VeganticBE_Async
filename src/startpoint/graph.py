@@ -13,6 +13,9 @@ from langchain_core.runnables import RunnableConfig
 from src.startpoint.state import InputState, OutputState
 from src.traffic.graph import TrafficWorkflowManager
 from src.dip.graph import DipWorkflowManager
+from src.dip_new.graph import DipNewWorkflowManager
+from src.dip_new.config import USE_DIP_NEW
+from src.customer_report.graph import CustomerReportWorkflowManager
 from utils.store import (manage_store, write_to_store, get_ttl_config,
 clear_store, create_memory_payload)
 from utils.categorize import route_query
@@ -77,6 +80,28 @@ async def call_dip_graph(state: InputState, runtime: Runtime[Context]):
     return result
 
 
+async def call_customer_report_graph(state: InputState, runtime: Runtime[Context]):
+    print(f"\ncall_customer_report_graph :: state :: {state}")
+    result = await CustomerReportWorkflowManager(
+        rid=state["request_id"], sid=state["session_id"], uid=state["user_id"],
+        source=state["data_source"]
+    ).run_report_agent(
+        question=state["question"], summarize=state["summarize"],
+        filters=state.get("filters") or {}, session_id=state["session_id"])
+
+    part_payload = partial(create_memory_payload, user_id=state['user_id'],
+                           session_id=state["session_id"],
+                           request_id=state["request_id"])
+    await write_to_store(category=HISTORY, payload=part_payload(
+        param_type="question", data=state["question"]))
+    await write_to_store(category=HISTORY, payload=part_payload(
+        param_type="answer", data=result,
+        fields=["sql_query", "summary", "error"]))
+
+    print(f"\ncustomerReportGraph :: call_customer_report_graph :: result :: {result}")
+    return result
+
+
 
 class WorkflowManager:
     def __init__(self):
@@ -90,9 +115,11 @@ class WorkflowManager:
         # Add nodes from the Traffic graph
         workflow.add_node("run_traffic", call_traffic_graph)
         workflow.add_node("run_dip", call_dip_graph)
+        workflow.add_node("run_customer_report", call_customer_report_graph)
         # Define edges
         workflow.add_edge("run_traffic", END)
         workflow.add_edge("run_dip", END)
+        workflow.add_edge("run_customer_report", END)
 
         return workflow
     
