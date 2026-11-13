@@ -1,8 +1,33 @@
 from utils.context import (
     DeleteSessionRequest, ClearSessionRequest, NewSessionRequest,
-    UpdateSessionRequest, UserDetailsRequest, UserSessionsRequest)
+    UpdateSessionRequest, UserDetailsRequest, UserSessionsRequest,
+    UserLoginRequest)
 from managers.user_session_db.engine import UserSessionsManager
 from config.user_sessions import DEL_SESS_ON_FILTER_CHANGE
+
+
+def authenticate_pwd(user_input: str, db_pwd: str):
+    import bcrypt
+    return bcrypt.checkpw(user_input, db_pwd)
+
+
+async def user_auth(data: dict):
+    try:
+        obj = UserLoginRequest(body=data)
+        query = f'''SELECT id, username, password, display_name FROM users
+                    WHERE username = {obj.user_name};'''
+        result = await UserSessionsManager().aget(query)
+        if result['rowCount'] > 0:
+            db_pwd = result["rows"][0]["password"]
+            if authenticate_pwd(obj.password, db_pwd):
+                return {
+                    "id": result["rows"][0]["id"],
+                    "username": result["rows"][0]["username"],
+                    "displayName": result["rows"][0]["display_name"],
+                }
+        return {}
+    except Exception as e:
+        raise e
 
 
 async def get_user_details(data: dict):
@@ -164,6 +189,6 @@ async def delete_session_details(session_id: int, data: dict):
         if exists["rowCount"] > 0:
             result = await dbm.aupd_del([query_2])
             return result
-        return {'ok': False}
+        return {}
     except Exception as e:
         raise e
