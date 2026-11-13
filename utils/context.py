@@ -17,7 +17,7 @@ class NewQueryRequest:
         self.user_id = body.get("user_id", f"user_{random.choice(range(USERS))}")
         self.question = body.get("text", "").strip()
         self.request_id = body.get("request_id", f"req_{random.choice(range(REQUESTS))}")
-        self.user_filters = body.get("filters", {})
+        self.filters = body.get("filters", {})
         self.selected_context = body.get("selected_context", [])
         self.selected_values = body.get("selected_values", [])
         self.session_id = body.get("sessionId", f"sess_{random.choice(range(SESSIONS))}")
@@ -25,6 +25,17 @@ class NewQueryRequest:
         # self.user_response = body.get("user_response", "").strip()
         # _no_summary = not body.get("no_summary", False)
         # self.summarize = body.get("summarize", _no_summary)
+
+    def is_valid(self, body):
+        return True if isinstance(body, dict) else False
+
+
+class UserLoginRequest:
+    def __init__(self, body: Union[dict, None]):
+        if not self.is_valid(body):
+            return None
+        self.user_name = body.get('username', '')
+        self.password = body.get('password', '')
 
     def is_valid(self, body):
         return True if isinstance(body, dict) else False
