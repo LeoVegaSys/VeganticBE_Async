@@ -30,6 +30,21 @@ def to_dt(v):
     return datetime.fromisoformat(s[:19])
 
 
+def root_cause(e, depth=0):
+    """Innermost error message: walks __cause__ / __context__ / exception groups."""
+    if depth > 10:
+        return f"{type(e).__name__}: {e}"
+    subs = getattr(e, "exceptions", None)          # ExceptionGroup (anyio TaskGroup)
+    if subs:
+        return "; ".join(root_cause(s, depth + 1) for s in subs)
+    inner = e.__cause__ or e.__context__
+    if inner is None:                              # memoize may pass it as an arg
+        inner = next((a for a in getattr(e, "args", ()) if isinstance(a, BaseException)), None)
+    if inner is not None and inner is not e:
+        return root_cause(inner, depth + 1)
+    return f"{type(e).__name__}: {e}"
+
+
 def threshold(args):
     """Exactly one of pct_range / max_pct / around_pct / threshold_pct -> (mode, lo, hi)."""
     if args.get("pct_range"):
@@ -60,9 +75,16 @@ class DipRunner:
         view, anchor = views[name]
         return E._mpls_source(view, anchor)
 
+
     async def run(self, sql):
         self.last_sql = sql
-        return await self.db._execute_query(uuid=self.request_id, query=sql)
+        try:
+            return await self.db._execute_query(uuid=self.request_id, query=sql)
+        except Exception as e:
+            # py-memoize hides the real error behind "Refresh failed to complete",
+            # and the MCP client can wrap it in an ExceptionGroup: show the root cause.
+            raise RuntimeError(root_cause(e)) from e
+
 
     async def latest_time(self, src):
         res = await self.run(
