@@ -44,7 +44,8 @@ async def call_traffic_graph(state: InputState, runtime: Runtime[Context]):
         rid=state["request_id"], sid=state["session_id"], uid=state["user_id"],
         source=state["data_source"]
     ).run_traffic_agent(question=state["question"],
-                        summarize=state["summarize"])
+                        summarize=state["summarize"],
+                        choices=state["choices"])
 
     print(f"\ntrafficGraph :: call_traffic_graph :: result :: {result}")
     return result

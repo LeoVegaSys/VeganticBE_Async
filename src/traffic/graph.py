@@ -47,7 +47,8 @@ class TrafficWorkflowManager:
             return self.create_workflow().compile(checkpointer=True)
         return self.create_workflow().compile()
 
-    async def run_traffic_agent(self, question: str, summarize: bool) -> dict:
+    async def run_traffic_agent(self, question: str, summarize: bool,
+                                choices: dict) -> dict:
         print(f"\nTrafficGraph :: run_traffic_agent :: Q {question} :: \
               :: SMR {summarize}")
         if USE_CHECKPOINTER:
@@ -56,7 +57,7 @@ class TrafficWorkflowManager:
             app = self.create_workflow().compile()
 
         result = await app.ainvoke(
-            {"question": question, "summarize": summarize}
+            {"question": question, "summarize": summarize, "choices": choices}
         )
 
         #Saving history
