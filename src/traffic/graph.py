@@ -7,6 +7,8 @@ from src.traffic.state import TrafficState, TrafficOutputState
 from src.traffic.agent import TrafficAgent
 from utils.store import write_to_store, create_memory_payload
 from config.store import HISTORY
+from config.checkpointer import USE_CHECKPOINTER
+
 
 class TrafficWorkflowManager:
     def __init__(self, rid: str, sid: str, uid: str, source: str):
@@ -41,13 +43,18 @@ class TrafficWorkflowManager:
         return workflow
     
     def returnGraph(self):
-        return self.create_workflow().compile(checkpointer=True)
+        if USE_CHECKPOINTER:
+            return self.create_workflow().compile(checkpointer=True)
+        return self.create_workflow().compile()
 
     async def run_traffic_agent(self, question: str, summarize: bool) -> dict:
         print(f"\nTrafficGraph :: run_traffic_agent :: Q {question} :: \
               :: SMR {summarize}")
-        app = self.create_workflow().compile(checkpointer=True)
-        # app = self.create_workflow().compile()
+        if USE_CHECKPOINTER:
+            app = self.create_workflow().compile(checkpointer=True)
+        else:
+            app = self.create_workflow().compile()
+
         result = await app.ainvoke(
             {"question": question, "summarize": summarize}
         )

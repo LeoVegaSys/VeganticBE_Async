@@ -9,6 +9,7 @@ class TrafficState(TypedDict):
     # request_id: str
     # messages : Annotated[list[AnyMessage], add_messages]
     question: str
+    parsed_question: str
     # mcp_server: str
     sql_query: str
     sql_valid: bool
@@ -26,11 +27,13 @@ class TrafficState(TypedDict):
     repairs_left: int
     summarize: bool
     review: str
+    choices: Dict[str, Any]         # Stores UI filters, context and values
 
 class TrafficOutputState(TypedDict):
     # request_id: str
     # messages : Annotated[list[AnyMessage], add_messages]
     question: str
+    parsed_question: str
     # mcp_server: str
     sql_query: str
     sql_valid: bool
@@ -48,4 +51,5 @@ class TrafficOutputState(TypedDict):
     # repairs_left: int
     summarize: bool
     review: str
+    choices: Dict[str, Any]         # Stores UI filters, context and values
     

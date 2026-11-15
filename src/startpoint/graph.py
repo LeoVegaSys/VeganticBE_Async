@@ -193,7 +193,7 @@ class WorkflowManager:
         user_choices = {
             'filters': rq.filters,
             'context': rq.selected_context,
-            'query_selections': rq.selected_values,
+            'values': rq.selected_values,
         }
 
         config: RunnableConfig = {

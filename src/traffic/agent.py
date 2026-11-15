@@ -15,6 +15,7 @@ from utils.prompts import (summarize_prompt, fallback_summarize, review_prompt)
 from config.traffic import QA_MAX_REPAIRS, CHART_INTENT_ALIASES
 from config.llm import SQL_MODEL, SUMMARY_MODEL
 from utils.delay import async_delay
+from utils.filters_mgmt import replace_selections_in_q
 
 from db.pattern import DBFactory
 
@@ -55,7 +56,7 @@ class TrafficAgent:
     async def generate_sql(self, state: dict) -> dict:
         """Create/Corrects SQL query for provided user question"""
         self.log.debug(f"\ntraffic_agent :: generate_sql :: state :: {state}")
-        question = state["question"]
+        question = state["parsed_question"]
 
         do_repair = False   #Manages SQL correction
         msgs = []
@@ -115,7 +116,7 @@ class TrafficAgent:
             _review_prompt = review_prompt().invoke({
                 "preview": orjson.dumps(state["results"][:40]).decode('utf-8')
                   if "results" in state else "",
-                "question": state["question"],
+                "question": state["parsed_question"],
                 "query": state["sql_query"],
                 "cols": state["columns"]
             }).to_string()
@@ -151,7 +152,7 @@ class TrafficAgent:
             return {"summary": f'Sorry, Please provide additional information. Original question : {state["question"]}'}
         try:
             summary_prompt = summarize_prompt().invoke({
-                "question": state["question"],
+                "question": state["parsed_question"],
                 "cols": state["columns"] if "columns" in state else "",
                 "preview" : orjson.dumps(state["results"][:40]).decode('utf-8')
                   if "results" in state else ""
@@ -188,9 +189,16 @@ class TrafficAgent:
         self.log.debug(f"\ntraffic_agent :: warmup :: state :: {state}")
         print(f"\ntraffic_agent :: warmup :: UID :: {runtime.context.user_id}")
         intent = intent_tag(state["question"])
+        expanded_question = replace_selections_in_q(
+            question=state["question"],
+            filters=state["choices"]["filters"],
+            context=state["choices"]["context"],
+            values=state["choices"]["values"],
+        )
 
         return {
             # "messages" : HumanMessage(content=state["question"]),
+            'parsed_question': expanded_question,
             "sql_query": '',
             "sql_issues": '',
             "repairs_left": QA_MAX_REPAIRS, 
