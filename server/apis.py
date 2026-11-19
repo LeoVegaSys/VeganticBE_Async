@@ -4,7 +4,6 @@ from aiohttp import web
 import aiohttp_cors
 
 from config.server import SERVER_HOST
-from src.start_with_rag.graph import RAGWorkflowManager
 from src.startpoint.graph import WorkflowManager
 from utils.context import (QueryRequest, SummarizeRequest)
 from utils.summarization import perform
@@ -13,20 +12,6 @@ from server.user_session_mgmt_apis import (
     log_in_user, user_details, user_sessions, add_new_session,
     session_details, delete_session, update_session, clear_session
 )
-
-
-
-async def process_query(request):
-    try:
-        data = await request.json()
-        # call langgraph workflow start func here
-        result = RAGWorkflowManager().answer_query(data=data)
-        payload = orjson.dumps(result).decode("utf-8")
-        return web.json_response(payload)
-    except json.JSONDecodeError:
-        return web.json_response({"error": "Invalid JSON"}, status=400)
-    except Exception as e:
-        return web.json_response({"error": str(e)}, status=500)
 
 
 async def handle_query(request):
@@ -78,7 +63,6 @@ async def summarize_chat(request):
 async def init_app():
     app = web.Application()
     app.add_routes([
-        web.post('/query', process_query),
         web.post('/ask', handle_query),
         web.post('/summarize', summarize_chat),
         web.post('/feedback', handle_feedback),
