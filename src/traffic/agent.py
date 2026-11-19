@@ -198,7 +198,7 @@ class TrafficAgent:
 
         return {
             # "messages" : HumanMessage(content=state["question"]),
-            'parsed_question': expanded_question,
+            "parsed_question": expanded_question,
             "sql_query": '',
             "sql_issues": '',
             "repairs_left": QA_MAX_REPAIRS, 

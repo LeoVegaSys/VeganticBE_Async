@@ -38,7 +38,7 @@ def replace_labels(question: str, context: list, values: list):
     for v in all_values:
         if re.search(r'\b' + re.escape(v["label"]) + r'\b', expanded_q):
             expanded_q = re.sub(
-                r'\b' + re.escape(v["label"]) + r'\b', v["value"], expanded_q)
+                r'\b' + re.escape(v["label"]) + r'\b', f"{v['type']} {v['value']}", expanded_q)
         else: # Add to non-matched list only if part of original values list
             if v in values:
                 non_matched_values.append(v)
@@ -80,7 +80,7 @@ def process_filters(filters: dict):
     s_tm = filters.get("timeStart", None)
     e_tm = filters.get("timeEnd", None)
     if all((s_dt, e_dt, s_tm, e_tm)):
-        pre_text += f"Between {s_dt} {s_tm} and {e_dt} {e_tm}, "
+        pre_text += f"between {s_dt} {s_tm} and {e_dt} {e_tm}, "
     if pre_text != placeholder:
         return pre_text
     return ""

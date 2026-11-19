@@ -74,3 +74,48 @@ def memories_to_chat_msgs(memories: list[dict]) -> list:
             if payload["type"] == "answer":
                 _msgs.append(('ai', payload["data"]))
     return _msgs
+
+
+# Query Router prompts
+
+router_intro_prompt = '''
+You are a strict query classification engine.
+Your task is to classify the given input query into exactly one of the following categories.
+
+Classification Rules
+'''
+
+dip_prompt = '''
+DIP Rule: Return run_dip
+If the input query contains any of the following words or phrases (including their case-insensitive occurrences), return run_dip.
+Keywords:{DIP_KEYWORDS}
+
+'''
+
+cust_rpt_prompt = '''
+CUSTOMER_REPORT Rule: Return run_customer_report
+If the input query contains any of the following words or phrases (including their case-insensitive occurrences), return run_cust.
+Keywords:{CR_KEYWORDS}
+
+'''
+
+traffic_prompt = '''
+DEFAULT Rule: Default classification
+If the input query does not contain any matching keyword from above Rules, return run_traffic.
+
+'''
+
+instructions = '''
+Important Instructions
+Matching must be case-insensitive.
+Match whole words rather than partial words. For example, fall should not match fallback.
+For multiword phrases such as 100% bandwidth and 100% bw, match the complete phrase.
+Return exactly one string.
+Do not provide explanations, additional text, punctuation, JSON, or reasoning.
+Never generate any output other than the permitted strings.
+Input Query:
+
+{input_query}
+
+Output:
+'''
