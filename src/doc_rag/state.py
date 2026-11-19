@@ -28,6 +28,7 @@ class InputState(TypedDict):
     repairs_left: int
     summarize: bool
     review: str
+    choices: Dict[str, Any]
 
 class OutputState(TypedDict):
     request_id: str
@@ -52,3 +53,4 @@ class OutputState(TypedDict):
     # repairs_left: int
     summarize: bool
     review: str
+    choices: Dict[str, Any]

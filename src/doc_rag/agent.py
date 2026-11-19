@@ -12,7 +12,7 @@ from utils.rag import query_rag
 from db.pattern import DBFactory
 
 
-class RAGAgent:
+class DocRAGAgent:
     def __init__(
             self,
             request_id: str,
